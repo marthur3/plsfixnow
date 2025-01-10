@@ -186,37 +186,14 @@ const ImageAnnotator = () => {
   };
 
   const generateExportableHtml = () => {
-    const currentImageId = images[currentImageIndex]?.id;
-    const currentImage = images[currentImageIndex];
-    const currentAnnots = annotations[currentImageId] || [];
-    
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>PLSFIXNOW Annotation</title>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; }
-          .container { max-width: 1200px; margin: 0 auto; }
-          .image-container { position: relative; display: inline-block; }
-          .annotation { position: absolute; transform: translate(-50%, -50%); }
-          .marker { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; border: none; }
-          .marker.incomplete { background-color: #3b82f6; }
-          .marker.complete { background-color: #22c55e; }
-          .popup { position: absolute; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10; width: 200px; margin-top: 8px; transform: translateX(-50%); }
-          .title { text-align: center; margin-bottom: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="title">
-            <h1>PLSFIXNOW</h1>
-            <p style="color: #666;">Exported annotation</p>
-          </div>
+    const allPages = images.map((image, index) => {
+      const imageAnnotations = annotations[image.id] || [];
+      return `
+        <div class="page-container ${index > 0 ? 'mt-8 pt-8 border-t' : ''}">
+          <h2 class="text-lg mb-4">Page ${index + 1}</h2>
           <div class="image-container">
-            <img src="${currentImage.src}" style="max-width: 100%; height: auto;">
-            ${currentAnnots.map(ann => `
+            <img src="${image.src}" style="max-width: 100%; height: auto;">
+            ${imageAnnotations.map(ann => `
               <div class="annotation" style="left: ${ann.x}%; top: ${ann.y}%">
                 <button 
                   class="marker ${ann.completed ? 'complete' : 'incomplete'}"
@@ -236,9 +213,36 @@ const ImageAnnotator = () => {
             `).join('')}
           </div>
         </div>
+      `;
+    }).join('');
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>PLSFIX Annotation</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; }
+          .container { max-width: 1200px; margin: 0 auto; }
+          .image-container { position: relative; display: inline-block; }
+          .annotation { position: absolute; transform: translate(-50%, -50%); }
+          .marker { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; border: none; }
+          .marker.incomplete { background-color: #3b82f6; }
+          .marker.complete { background-color: #22c55e; }
+          .popup { position: absolute; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10; width: 200px; margin-top: 8px; transform: translateX(-50%); }
+          .title { text-align: center; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="title">
+            <h1>PLSFIX</h1>
+            <p style="color: #666;">Exported annotations (${images.length} pages)</p>
+          </div>
+          ${allPages}
+        </div>
         <script>
-          const annotations = ${JSON.stringify(currentAnnots)};
-          
           function togglePopup(id) {
             const popup = document.getElementById('popup-' + id);
             const allPopups = document.querySelectorAll('.popup');
@@ -292,55 +296,76 @@ const ImageAnnotator = () => {
         <p className="text-sm text-slate-600">Take a screenshot and copy and paste or upload an image to start annotating.</p>
       </div>
       <div className="space-y-4">
-        <div className="flex gap-4 items-center justify-between">
-          <div className="flex-1">
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp"
-              multiple
-              onChange={handleImageUpload}
-              className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-            />
-            <p className="mt-1 text-xs text-slate-500">Supported formats: PNG, JPEG, GIF, WebP</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Clipboard className="w-4 h-4" />
-              Paste image (Ctrl+V)
+        {!images.length && (
+          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-8">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Clipboard className="w-6 h-6" />
+                <span className="text-lg">Paste image from clipboard (Ctrl+V)</span>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-slate-500 mb-2">or</p>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                />
+                <p className="mt-2 text-xs text-slate-500">Supported formats: PNG, JPEG, GIF, WebP</p>
+              </div>
             </div>
-            {images.length > 0 && (
-              <Button
-                onClick={handleExport}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
-            )}
           </div>
-        </div>
+        )}
 
         {images.length > 0 && (
           <>
             <div className="flex justify-between items-center">
-              <Button
-                onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
-                disabled={currentImageIndex === 0}
-                variant="outline"
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-slate-500">
-                Page {currentImageIndex + 1} of {images.length}
-              </span>
-              <Button
-                onClick={() => setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))}
-                disabled={currentImageIndex === images.length - 1}
-                variant="outline"
-              >
-                Next
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  onClick={() => document.getElementById('newImageInput').click()}
+                >
+                  <FileImage className="w-4 h-4" />
+                  New Image
+                </Button>
+                <input
+                  id="newImageInput"
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentImageIndex === 0}
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+                <span className="inline-flex items-center text-sm text-slate-500">
+                  Page {currentImageIndex + 1} of {images.length}
+                </span>
+                <Button
+                  onClick={() => setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))}
+                  disabled={currentImageIndex === images.length - 1}
+                  variant="outline"
+                >
+                  Next
+                </Button>
+                <Button
+                  onClick={handleExport}
+                  variant="outline"
+                  className="flex items-center gap-2 ml-4"
+                >
+                  <Download className="w-4 h-4" />
+                  Export All ({images.length})
+                </Button>
+              </div>
             </div>
 
             <div 
