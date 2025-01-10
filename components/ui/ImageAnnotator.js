@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, X, FileImage, Clipboard, Download } from 'lucide-react';
+import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Instructions from './Instructions';
 
 const ImageAnnotator = () => {
   const [images, setImages] = useState([]);  // Array of {id, src}
@@ -11,6 +12,7 @@ const ImageAnnotator = () => {
   const [noteInput, setNoteInput] = useState({ visible: false, x: 0, y: 0 });
   const [noteText, setNoteText] = useState('');
   const [draggedAnnotation, setDraggedAnnotation] = useState(null);
+  const [showInstructions, setShowInstructions] = useState(false);
   const imageRef = useRef(null);
   const popupRef = useRef(null);
   const noteInputRef = useRef(null);
@@ -290,208 +292,231 @@ const ImageAnnotator = () => {
     : [];
 
   return (
-    <Card className="p-6 max-w-4xl mx-auto" ref={containerRef}>
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold mb-2">PLSFIXNOW</h1>
-        <p className="text-sm text-slate-600">Take a screenshot and copy and paste or upload an image to start annotating.</p>
+    <div className="relative">
+      {/* Instructions Panel */}
+      <div 
+        className={`fixed right-0 top-0 h-full w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
+          showInstructions ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="p-4 h-full overflow-y-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute left-0 top-4 -translate-x-full bg-white shadow-lg rounded-l-lg p-2"
+            onClick={() => setShowInstructions(!showInstructions)}
+          >
+            <HelpCircle className="w-5 h-5" />
+          </Button>
+          <Instructions hasImages={images.length > 0} />
+        </div>
       </div>
-      <div className="space-y-4">
-        {!images.length && (
-          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-8">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <div className="flex items-center gap-2 text-slate-500">
-                <Clipboard className="w-6 h-6" />
-                <span className="text-lg">Paste image from clipboard (Ctrl+V)</span>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-slate-500 mb-2">or</p>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/gif,image/webp"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-                />
-                <p className="mt-2 text-xs text-slate-500">Supported formats: PNG, JPEG, GIF, WebP</p>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {images.length > 0 && (
-          <>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  onClick={() => document.getElementById('newImageInput').click()}
-                >
-                  <FileImage className="w-4 h-4" />
-                  New Image
-                </Button>
-                <input
-                  id="newImageInput"
-                  type="file"
-                  accept="image/png,image/jpeg,image/gif,image/webp"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
-                  disabled={currentImageIndex === 0}
-                  variant="outline"
-                >
-                  Previous
-                </Button>
-                <span className="inline-flex items-center text-sm text-slate-500">
-                  Page {currentImageIndex + 1} of {images.length}
-                </span>
-                <Button
-                  onClick={() => setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))}
-                  disabled={currentImageIndex === images.length - 1}
-                  variant="outline"
-                >
-                  Next
-                </Button>
-                <Button
-                  onClick={handleExport}
-                  variant="outline"
-                  className="flex items-center gap-2 ml-4"
-                >
-                  <Download className="w-4 h-4" />
-                  Export All ({images.length})
-                </Button>
-              </div>
-            </div>
-
-            <div 
-              className="relative inline-block" 
-              style={{ maxWidth: '100%' }}
-              onMouseMove={handleDrag}
-              onMouseUp={handleDragEnd}
-            >
-              <img
-                ref={imageRef}
-                src={images[currentImageIndex].src}
-                alt={`Image ${currentImageIndex + 1}`}
-                className="max-w-full h-auto"
-                onDoubleClick={handleImageDoubleClick}
-              />
-              
-              {noteInput.visible && (
-                <div
-                  ref={noteInputRef}
-                  className="absolute z-20 bg-white p-3 rounded-lg shadow-lg"
-                  style={{
-                    left: `${noteInput.x}%`,
-                    top: `${noteInput.y}%`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                >
-                  <div className="flex flex-col gap-2">
-                    <input
-                      id="noteInput"
-                      type="text"
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleNoteSubmit(e);
-                        }
-                      }}
-                      placeholder="Enter note text..."
-                      className="px-3 py-2 border rounded-lg"
-                      autoFocus
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setNoteInput({ visible: false, x: 0, y: 0 });
-                          setNoteText('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="button" 
-                        size="sm"
-                        onClick={handleNoteSubmit}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </div>
+      {/* Main Content */}
+      <Card className="p-6 max-w-4xl mx-auto" ref={containerRef}>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">PLSFIXNOW</h1>
+          <p className="text-sm text-slate-600">Take a screenshot and copy and paste or upload an image to start annotating.</p>
+        </div>
+        
+        <div className="space-y-4">
+          {!images.length && (
+            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-8">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <Clipboard className="w-6 h-6" />
+                  <span className="text-lg">Paste image from clipboard (Ctrl+V)</span>
                 </div>
-              )}
+                <div className="text-center">
+                  <p className="text-sm text-slate-500 mb-2">or</p>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                  />
+                  <p className="mt-2 text-xs text-slate-500">Supported formats: PNG, JPEG, GIF, WebP</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-              {currentAnnotations.map((annotation) => (
-                <div
-                  key={annotation.id}
-                  className="absolute"
-                  style={{
-                    left: `${annotation.x}%`,
-                    top: `${annotation.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    cursor: 'move'
-                  }}
-                >
-                  <button
-                    onMouseDown={(e) => handleDragStart(annotation, e)}
-                    onClick={(e) => toggleAnnotation(annotation, e)}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      annotation.completed ? 'bg-green-500' : 'bg-blue-500'
-                    } text-white hover:opacity-90 transition-opacity`}
+          {images.length > 0 && (
+            <>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => document.getElementById('newImageInput').click()}
                   >
-                    {annotation.completed ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4" />
-                    )}
-                  </button>
+                    <FileImage className="w-4 h-4" />
+                    New Image
+                  </Button>
+                  <input
+                    id="newImageInput"
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                    disabled={currentImageIndex === 0}
+                    variant="outline"
+                  >
+                    Previous
+                  </Button>
+                  <span className="inline-flex items-center text-sm text-slate-500">
+                    Page {currentImageIndex + 1} of {images.length}
+                  </span>
+                  <Button
+                    onClick={() => setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))}
+                    disabled={currentImageIndex === images.length - 1}
+                    variant="outline"
+                  >
+                    Next
+                  </Button>
+                  <Button
+                    onClick={handleExport}
+                    variant="outline"
+                    className="flex items-center gap-2 ml-4"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export All ({images.length})
+                  </Button>
+                </div>
+              </div>
 
-                  {selectedAnnotation?.id === annotation.id && (
-                    <div
-                      ref={popupRef}
-                      className="absolute z-10 bg-white p-3 rounded-lg shadow-lg -translate-x-1/2 mt-2 w-56"
-                    >
-                      <p className="mb-2 text-sm">{annotation.note}</p>
-                      <div className="flex justify-between">
+              <div 
+                className="relative inline-block" 
+                style={{ maxWidth: '100%' }}
+                onMouseMove={handleDrag}
+                onMouseUp={handleDragEnd}
+              >
+                <img
+                  ref={imageRef}
+                  src={images[currentImageIndex].src}
+                  alt={`Image ${currentImageIndex + 1}`}
+                  className="max-w-full h-auto"
+                  onDoubleClick={handleImageDoubleClick}
+                />
+                
+                {noteInput.visible && (
+                  <div
+                    ref={noteInputRef}
+                    className="absolute z-20 bg-white p-3 rounded-lg shadow-lg"
+                    style={{
+                      left: `${noteInput.x}%`,
+                      top: `${noteInput.y}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    <div className="flex flex-col gap-2">
+                      <input
+                        id="noteInput"
+                        type="text"
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleNoteSubmit(e);
+                          }
+                        }}
+                        placeholder="Enter note text..."
+                        className="px-3 py-2 border rounded-lg"
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-2">
                         <Button
-                          size="sm"
+                          type="button"
                           variant="outline"
-                          onClick={(e) => toggleCompletion(annotation.id, e)}
-                          className="flex items-center gap-1"
+                          size="sm"
+                          onClick={() => {
+                            setNoteInput({ visible: false, x: 0, y: 0 });
+                            setNoteText('');
+                          }}
                         >
-                          <Check className="w-4 h-4" />
-                          {annotation.completed ? 'Undo' : 'Complete'}
+                          Cancel
                         </Button>
-                        <Button
+                        <Button 
+                          type="button" 
                           size="sm"
-                          variant="outline"
-                          onClick={(e) => deleteAnnotation(annotation.id, e)}
-                          className="flex items-center gap-1"
+                          onClick={handleNoteSubmit}
                         >
-                          <X className="w-4 h-4" />
-                          Delete
+                          Add
                         </Button>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </Card>
+                  </div>
+                )}
+
+                {currentAnnotations.map((annotation) => (
+                  <div
+                    key={annotation.id}
+                    className="absolute"
+                    style={{
+                      left: `${annotation.x}%`,
+                      top: `${annotation.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      cursor: 'move'
+                    }}
+                  >
+                    <button
+                      onMouseDown={(e) => handleDragStart(annotation, e)}
+                      onClick={(e) => toggleAnnotation(annotation, e)}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        annotation.completed ? 'bg-green-500' : 'bg-blue-500'
+                      } text-white hover:opacity-90 transition-opacity`}
+                    >
+                      {annotation.completed ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                    </button>
+
+                    {selectedAnnotation?.id === annotation.id && (
+                      <div
+                        ref={popupRef}
+                        className="absolute z-10 bg-white p-3 rounded-lg shadow-lg -translate-x-1/2 mt-2 w-56"
+                      >
+                        <p className="mb-2 text-sm">{annotation.note}</p>
+                        <div className="flex justify-between">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => toggleCompletion(annotation.id, e)}
+                            className="flex items-center gap-1"
+                          >
+                            <Check className="w-4 h-4" />
+                            {annotation.completed ? 'Undo' : 'Complete'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => deleteAnnotation(annotation.id, e)}
+                            className="flex items-center gap-1"
+                          >
+                            <X className="w-4 h-4" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 };
 
