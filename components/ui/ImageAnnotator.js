@@ -60,15 +60,45 @@ const ImageAnnotator = () => {
       
       if (noteInput.visible && 
           noteInputRef.current && 
-          !noteInputRef.current.contains(event.target)) {
+          !noteInputRef.current.contains(event.target) &&
+          !event.target.closest('#noteInput')) {
         setNoteInput({ visible: false, x: 0, y: 0 });
         setNoteText('');
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchend', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchend', handleClickOutside);
+    };
   }, [selectedAnnotation, noteInput.visible]);
+
+  useEffect(() => {
+    if (noteInput.visible) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [noteInput.visible]);
+
+  const noteInputStyles = {
+    position: 'fixed',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '90%',
+    maxWidth: '400px',
+    zIndex: 1000,
+    backgroundColor: 'white',
+    padding: '1rem',
+    borderRadius: '0.5rem',
+    boxShadow: '0 0 0 100vmax rgba(0,0,0,0.3)',
+  };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -570,53 +600,59 @@ const ImageAnnotator = () => {
                 />
                 
                 {noteInput.visible && (
-                  <div
-                    ref={noteInputRef}
-                    className="absolute z-20 bg-white p-3 rounded-lg shadow-lg"
-                    style={{
-                      left: `${noteInput.x}%`,
-                      top: `${noteInput.y}%`,
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  >
-                    <div className="flex flex-col gap-2">
-                      <input
-                        id="noteInput"
-                        type="text"
-                        value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleNoteSubmit(e);
-                          }
-                        }}
-                        placeholder="Enter note text..."
-                        className="px-3 py-2 border rounded-lg"
-                        autoFocus
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setNoteInput({ visible: false, x: 0, y: 0 });
-                            setNoteText('');
+                  <>
+                    <div 
+                      className="fixed inset-0 bg-black/50 z-40"
+                      onClick={() => {
+                        setNoteInput({ visible: false, x: 0, y: 0 });
+                        setNoteText('');
+                      }}
+                    />
+                    <div
+                      ref={noteInputRef}
+                      style={noteInputStyles}
+                    >
+                      <div className="flex flex-col gap-3">
+                        <input
+                          id="noteInput"
+                          type="text"
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleNoteSubmit(e);
+                            }
                           }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          type="button" 
-                          size="sm"
-                          onClick={handleNoteSubmit}
-                        >
-                          Add
-                        </Button>
+                          placeholder="Enter note text..."
+                          className="w-full px-4 py-3 border rounded-lg text-base"
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            className="py-3 px-4"
+                            onClick={() => {
+                              setNoteInput({ visible: false, x: 0, y: 0 });
+                              setNoteText('');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            type="button" 
+                            size="lg"
+                            className="py-3 px-4"
+                            onClick={handleNoteSubmit}
+                          >
+                            Add
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {currentAnnotations.map((annotation) => (
