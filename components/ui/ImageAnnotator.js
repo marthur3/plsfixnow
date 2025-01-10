@@ -288,8 +288,8 @@ const ImageAnnotator = () => {
   return (
     <Card className="p-6 max-w-4xl mx-auto" ref={containerRef}>
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold">PLSFIXNOW</h1>
-        <p className="text-sm text-slate-500">Upload or paste an image to start annotating.</p>
+        <h1 className="text-2xl font-bold mb-2">PLSFIXNOW</h1>
+        <p className="text-sm text-slate-600">Take a screenshot and copy and paste or upload an image to start annotating.</p>
       </div>
       <div className="space-y-4">
         <div className="flex gap-4 items-center justify-between">
