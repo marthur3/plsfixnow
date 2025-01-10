@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle } from 'lucide-react';
+import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Instructions from './Instructions';
+import html2canvas from 'html2canvas';
+import ExportDialog from './ExportDialog';
 
 const ImageAnnotator = () => {
   const [images, setImages] = useState([]);  // Array of {id, src}
@@ -13,6 +15,7 @@ const ImageAnnotator = () => {
   const [noteText, setNoteText] = useState('');
   const [draggedAnnotation, setDraggedAnnotation] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState({ visible: false, type: null });
   const imageRef = useRef(null);
   const popupRef = useRef(null);
   const noteInputRef = useRef(null);
@@ -222,7 +225,7 @@ const ImageAnnotator = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>PLSFIX Annotation</title>
+        <title>PLSFIX-THX Annotation</title>
         <meta charset="utf-8">
         <style>
           body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; }
@@ -239,7 +242,7 @@ const ImageAnnotator = () => {
       <body>
         <div class="container">
           <div class="title">
-            <h1>PLSFIX</h1>
+            <h1>PLSFIX-THX</h1>
             <p style="color: #666;">Exported annotations (${images.length} pages)</p>
           </div>
           ${allPages}
@@ -274,17 +277,143 @@ const ImageAnnotator = () => {
     return html;
   };
 
-  const handleExport = () => {
-    const html = generateExportableHtml();
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'annotation-export.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExportClick = (type) => {
+    setShowExportDialog({ visible: true, type });
+  };
+
+  const handleExportSubmit = (e) => {
+    e.preventDefault();
+    const filename = e.target.filename.value.trim();
+    
+    if (showExportDialog.type === 'html') {
+      const html = generateExportableHtml();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename + '.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if (showExportDialog.type === 'png') {
+      handleExportPNG(filename);
+    }
+    
+    setShowExportDialog({ visible: false, type: null });
+  };
+
+  const handleExportPNG = async (filename) => {
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '-9999px';
+    document.body.appendChild(container);
+
+    try {
+      // Process each image
+      for (let i = 0; i < images.length; i++) {
+        const imageContainer = document.createElement('div');
+        imageContainer.style.position = 'relative';
+        imageContainer.style.display = 'inline-block';
+        imageContainer.style.padding = '20px';  // Add padding around the image
+        
+        // Add the image
+        const imgElement = document.createElement('img');
+        imgElement.src = images[i].src;
+        imgElement.style.maxWidth = '100%';
+        imageContainer.appendChild(imgElement);
+
+        // Add visible annotations
+        const imageAnnotations = annotations[images[i].id] || [];
+        
+        imageAnnotations.forEach(ann => {
+          const marker = document.createElement('div');
+          marker.style.position = 'absolute';
+          marker.style.left = `${ann.x}%`;
+          marker.style.top = `${ann.y}%`;
+          marker.style.transform = 'translate(-50%, -50%)';
+          marker.style.width = '48px'; // Fixed width for marker container
+          marker.style.height = '48px'; // Fixed height for marker container
+
+          // Improved marker button
+          const button = document.createElement('div');
+          button.style.width = '48px'; // Larger fixed size
+          button.style.height = '48px'; // Larger fixed size
+          button.style.borderRadius = '50%';
+          button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
+          button.style.color = 'white';
+          button.style.display = 'flex';
+          button.style.alignItems = 'center';
+          button.style.justifyContent = 'center';
+          button.style.border = '3px solid white'; // Thicker border
+          button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+          button.style.position = 'relative'; // For centering the icon
+          
+          // Better icon styling
+          const icon = document.createElement('div');
+          icon.style.position = 'absolute';
+          icon.style.left = '50%';
+          icon.style.top = '50%';
+          icon.style.transform = 'translate(-50%, -50%)';
+          icon.style.fontSize = '28px'; // Larger font size
+          icon.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+          icon.style.fontWeight = 'bold';
+          icon.style.lineHeight = '1';
+          icon.innerHTML = ann.completed ? '✓' : '!';
+          button.appendChild(icon);
+          
+          // Improved note style
+          const note = document.createElement('div');
+          note.style.position = 'absolute';
+          note.style.backgroundColor = 'white';
+          note.style.padding = '16px 24px'; // More padding
+          note.style.borderRadius = '12px'; // Larger radius
+          note.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2), 0 0 0 2px rgba(0,0,0,0.1)';
+          note.style.fontSize = '28px'; // Larger font
+          note.style.fontWeight = '500';
+          note.style.top = '130%'; // More spacing from marker
+          note.style.left = '50%';
+          note.style.transform = 'translateX(-50%)';
+          note.style.marginTop = '12px';
+          note.style.whiteSpace = 'normal';
+          note.style.maxWidth = '400px'; // Wider notes
+          note.style.minWidth = '200px'; // Minimum width
+          note.style.color = '#000000';
+          note.style.lineHeight = '1.4';
+          note.style.textAlign = 'left';
+          note.style.border = '2px solid #e5e7eb';
+          note.style.zIndex = '1000';
+          note.textContent = ann.note;
+          
+          marker.appendChild(button);
+          marker.appendChild(note);
+          imageContainer.appendChild(marker);
+        });
+
+        container.appendChild(imageContainer);
+
+        // Generate canvas for current page
+        const canvas = await html2canvas(imageContainer, {
+          backgroundColor: 'white',
+          scale: 2,  // Higher quality
+        });
+        
+        // Download individual PNG
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${filename}-page${i + 1}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Clear container for next image
+        container.innerHTML = '';
+      }
+    } finally {
+      document.body.removeChild(container);
+    }
   };
 
   const currentAnnotations = images[currentImageIndex]
@@ -293,6 +422,14 @@ const ImageAnnotator = () => {
 
   return (
     <div className="relative">
+      {showExportDialog.visible && (
+        <ExportDialog
+          onSubmit={handleExportSubmit}
+          onClose={() => setShowExportDialog({ visible: false, type: null })}
+          defaultName={`annotation-${currentImageIndex + 1}`}
+        />
+      )}
+
       {/* Instructions Panel */}
       <div 
         className={`fixed right-0 top-0 h-full w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
@@ -315,7 +452,7 @@ const ImageAnnotator = () => {
       {/* Main Content */}
       <Card className="p-6 max-w-4xl mx-auto" ref={containerRef}>
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">PLSFIXNOW</h1>
+          <h1 className="text-2xl font-bold mb-2">PLSFIX-THX</h1>
           <p className="text-sm text-slate-600">Take a screenshot and copy and paste or upload an image to start annotating.</p>
         </div>
         
@@ -382,12 +519,20 @@ const ImageAnnotator = () => {
                     Next
                   </Button>
                   <Button
-                    onClick={handleExport}
+                    onClick={() => handleExportClick('html')}
                     variant="outline"
-                    className="flex items-center gap-2 ml-4"
+                    className="flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" />
-                    Export All ({images.length})
+                    Export HTML
+                  </Button>
+                  <Button
+                    onClick={() => handleExportClick('png')}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    Export PNG
                   </Button>
                 </div>
               </div>
