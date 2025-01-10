@@ -87,12 +87,21 @@ const ImageAnnotator = () => {
     });
   };
 
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      handleImageDoubleClick(touch);
+    }
+  };
+
   const handleImageDoubleClick = (e) => {
     if (!imageRef.current) return;
 
     const rect = imageRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const clientX = e.clientX || e.pageX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || e.pageY || (e.touches && e.touches[0].clientY);
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
 
     setNoteInput({
       visible: true,
@@ -432,7 +441,7 @@ const ImageAnnotator = () => {
 
       {/* Instructions Panel */}
       <div 
-        className={`fixed right-0 top-0 h-full w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed right-0 top-0 h-full w-full md:w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
           showInstructions ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -450,15 +459,15 @@ const ImageAnnotator = () => {
       </div>
 
       {/* Main Content */}
-      <Card className="p-6 max-w-4xl mx-auto" ref={containerRef}>
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">PLSFIX-THX</h1>
-          <p className="text-sm text-slate-600">Take a screenshot and copy and paste or upload an image to start annotating.</p>
+      <Card className="p-3 md:p-6 w-full mx-auto" ref={containerRef}>
+        <div className="text-center mb-4 md:mb-6">
+          <h1 className="text-xl md:text-2xl font-bold mb-2">PLSFIX-THX</h1>
+          <p className="text-xs md:text-sm text-slate-600">Take a screenshot and copy and paste or upload an image to start annotating.</p>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {!images.length && (
-            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-8">
+            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-4 md:p-8">
               <div className="flex flex-col items-center justify-center gap-4">
                 <div className="flex items-center gap-2 text-slate-500">
                   <Clipboard className="w-6 h-6" />
@@ -481,15 +490,16 @@ const ImageAnnotator = () => {
 
           {images.length > 0 && (
             <>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between gap-3 md:items-center">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    className="flex items-center gap-2"
+                    className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
                     onClick={() => document.getElementById('newImageInput').click()}
                   >
                     <FileImage className="w-4 h-4" />
-                    New Image
+                    <span className="hidden md:inline">New Image</span>
+                    <span className="md:hidden">Add</span>
                   </Button>
                   <input
                     id="newImageInput"
@@ -500,48 +510,56 @@ const ImageAnnotator = () => {
                     className="hidden"
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
-                    disabled={currentImageIndex === 0}
-                    variant="outline"
-                  >
-                    Previous
-                  </Button>
-                  <span className="inline-flex items-center text-sm text-slate-500">
-                    Page {currentImageIndex + 1} of {images.length}
-                  </span>
-                  <Button
-                    onClick={() => setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))}
-                    disabled={currentImageIndex === images.length - 1}
-                    variant="outline"
-                  >
-                    Next
-                  </Button>
+                <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                      disabled={currentImageIndex === 0}
+                      variant="outline"
+                      className="px-3 py-3 md:py-2"
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-slate-500">
+                      {currentImageIndex + 1}/{images.length}
+                    </span>
+                    <Button
+                      onClick={() => setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))}
+                      disabled={currentImageIndex === images.length - 1}
+                      variant="outline"
+                      className="px-3 py-3 md:py-2"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2">
                   <Button
                     onClick={() => handleExportClick('html')}
                     variant="outline"
-                    className="flex items-center gap-2"
+                    className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
                   >
                     <Download className="w-4 h-4" />
-                    Export HTML
+                    <span className="hidden md:inline">Export HTML</span>
+                    <span className="md:hidden">HTML</span>
                   </Button>
                   <Button
                     onClick={() => handleExportClick('png')}
                     variant="outline"
-                    className="flex items-center gap-2"
+                    className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
                   >
                     <ImageIcon className="w-4 h-4" />
-                    Export PNG
+                    <span className="hidden md:inline">Export PNG</span>
+                    <span className="md:hidden">PNG</span>
                   </Button>
                 </div>
               </div>
 
               <div 
-                className="relative inline-block" 
-                style={{ maxWidth: '100%' }}
+                className="relative inline-block w-full"
                 onMouseMove={handleDrag}
                 onMouseUp={handleDragEnd}
+                onTouchStart={handleTouchStart}
               >
                 <img
                   ref={imageRef}
@@ -604,7 +622,7 @@ const ImageAnnotator = () => {
                 {currentAnnotations.map((annotation) => (
                   <div
                     key={annotation.id}
-                    className="absolute"
+                    className="absolute touch-manipulation"
                     style={{
                       left: `${annotation.x}%`,
                       top: `${annotation.y}%`,
@@ -615,38 +633,38 @@ const ImageAnnotator = () => {
                     <button
                       onMouseDown={(e) => handleDragStart(annotation, e)}
                       onClick={(e) => toggleAnnotation(annotation, e)}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      className={`w-8 h-8 md:w-6 md:h-6 rounded-full flex items-center justify-center ${
                         annotation.completed ? 'bg-green-500' : 'bg-blue-500'
                       } text-white hover:opacity-90 transition-opacity`}
                     >
                       {annotation.completed ? (
-                        <Check className="w-4 h-4" />
+                        <Check className="w-5 h-5 md:w-4 md:h-4" />
                       ) : (
-                        <AlertCircle className="w-4 h-4" />
+                        <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
                       )}
                     </button>
 
                     {selectedAnnotation?.id === annotation.id && (
                       <div
                         ref={popupRef}
-                        className="absolute z-10 bg-white p-3 rounded-lg shadow-lg -translate-x-1/2 mt-2 w-56"
+                        className="absolute z-10 bg-white p-4 rounded-lg shadow-lg -translate-x-1/2 mt-2 w-64 md:w-56"
                       >
-                        <p className="mb-2 text-sm">{annotation.note}</p>
-                        <div className="flex justify-between">
+                        <p className="mb-3 text-base">{annotation.note}</p>
+                        <div className="flex justify-between gap-2">
                           <Button
-                            size="sm"
+                            size="lg"
                             variant="outline"
                             onClick={(e) => toggleCompletion(annotation.id, e)}
-                            className="flex items-center gap-1"
+                            className="flex-1 items-center gap-1 py-3"
                           >
                             <Check className="w-4 h-4" />
                             {annotation.completed ? 'Undo' : 'Complete'}
                           </Button>
                           <Button
-                            size="sm"
+                            size="lg"
                             variant="outline"
                             onClick={(e) => deleteAnnotation(annotation.id, e)}
-                            className="flex items-center gap-1"
+                            className="flex-1 items-center gap-1 py-3"
                           >
                             <X className="w-4 h-4" />
                             Delete
