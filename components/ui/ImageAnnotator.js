@@ -6,6 +6,7 @@ import Instructions from './Instructions';
 import html2canvas from 'html2canvas';
 import ExportDialog from './ExportDialog';
 
+
 const ImageAnnotator = () => {
   const [images, setImages] = useState([]);  // Array of {id, src}
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -20,6 +21,11 @@ const ImageAnnotator = () => {
   const popupRef = useRef(null);
   const noteInputRef = useRef(null);
   const containerRef = useRef(null);
+  // Add containerSize state
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  // Add reference for annotations container
+  const annotationsRef = useRef(null);
 
   useEffect(() => {
     const handlePaste = async (e) => {
@@ -33,13 +39,19 @@ const ImageAnnotator = () => {
         const reader = new FileReader();
         
         reader.onload = (e) => {
-          const newImage = {
-            id: Date.now(),
-            src: e.target.result
+          const img = new Image();
+          img.onload = () => {
+            const newImage = {
+              id: Date.now(),
+              src: e.target.result,
+              width: img.width,
+              height: img.height
+            };
+            setImages(prev => [...prev, newImage]);
+            setAnnotations(prev => ({ ...prev, [newImage.id]: [] }));
+            setCurrentImageIndex(images.length);
           };
-          setImages(prev => [...prev, newImage]);
-          setAnnotations(prev => ({ ...prev, [newImage.id]: [] }));
-          setCurrentImageIndex(images.length);
+          img.src = e.target.result;
         };
         
         reader.readAsDataURL(blob);
@@ -86,6 +98,26 @@ const ImageAnnotator = () => {
     };
   }, [noteInput.visible]);
 
+  // Add resize observer
+  useEffect(() => {
+    if (!imageRef.current) return;
+    
+    const updateDimensions = () => {
+      if (imageRef.current) {
+        const { width, height } = imageRef.current.getBoundingClientRect();
+        setContainerSize({ width, height });
+      }
+    };
+
+    const observer = new ResizeObserver(updateDimensions);
+    observer.observe(imageRef.current);
+    updateDimensions();
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [currentImageIndex]);
+
   const noteInputStyles = {
     position: 'fixed',
     left: '50%',
@@ -105,13 +137,19 @@ const ImageAnnotator = () => {
     files.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const newImage = {
-          id: Date.now(),
-          src: e.target.result
+        const img = new Image();
+        img.onload = () => {
+          const newImage = {
+            id: Date.now(),
+            src: e.target.result,
+            width: img.width,
+            height: img.height
+          };
+          setImages(prev => [...prev, newImage]);
+          setAnnotations(prev => ({ ...prev, [newImage.id]: [] }));
+          setCurrentImageIndex(images.length);
         };
-        setImages(prev => [...prev, newImage]);
-        setAnnotations(prev => ({ ...prev, [newImage.id]: [] }));
-        setCurrentImageIndex(images.length);
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     });
@@ -124,14 +162,45 @@ const ImageAnnotator = () => {
     }
   };
 
+  // Updated coordinate calculation helper
+  const getRelativeCoordinates = (clientX, clientY) => {
+    if (!imageRef.current || !annotationsRef.current) return { x: 0, y: 0 };
+    
+    const imageRect = imageRef.current.getBoundingClientRect();
+    const containerRect = annotationsRef.current.getBoundingClientRect();
+
+    // Calculate the actual rendered image position within the container
+    const imageWidth = imageRect.width;
+    const imageHeight = imageRect.height;
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+
+    // Calculate the offset of the image within the container
+    const offsetX = (containerWidth - imageWidth) / 2;
+    const offsetY = (containerHeight - imageHeight) / 2;
+
+    // Calculate the position relative to the actual image area
+    const imageX = clientX - (containerRect.left + offsetX);
+    const imageY = clientY - (containerRect.top + offsetY);
+
+    // Convert to percentages within the actual image area
+    const x = (imageX / imageWidth) * 100;
+    const y = (imageY / imageHeight) * 100;
+
+    // Ensure coordinates are within bounds
+    return {
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y))
+    };
+  };
+
+  // Update handleImageDoubleClick
   const handleImageDoubleClick = (e) => {
     if (!imageRef.current) return;
 
-    const rect = imageRef.current.getBoundingClientRect();
     const clientX = e.clientX || e.pageX || (e.touches && e.touches[0].clientX);
     const clientY = e.clientY || e.pageY || (e.touches && e.touches[0].clientY);
-    const x = ((clientX - rect.left) / rect.width) * 100;
-    const y = ((clientY - rect.top) / rect.height) * 100;
+    const { x, y } = getRelativeCoordinates(clientX, clientY);
 
     setNoteInput({
       visible: true,
@@ -168,28 +237,31 @@ const ImageAnnotator = () => {
     setNoteText('');
   };
 
+  // Update dragStart to include touch events
   const handleDragStart = (annotation, e) => {
+    e.preventDefault();
     e.stopPropagation();
     setDraggedAnnotation(annotation);
     setSelectedAnnotation(null);
   };
 
+  // Update drag handler to support both mouse and touch
   const handleDrag = (e) => {
     if (!draggedAnnotation || !imageRef.current) return;
 
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    if (!clientX || !clientY) return;
 
-    const boundedX = Math.max(0, Math.min(100, x));
-    const boundedY = Math.max(0, Math.min(100, y));
-
+    const { x, y } = getRelativeCoordinates(clientX, clientY);
+    
     const currentImageId = images[currentImageIndex].id;
     setAnnotations(prev => ({
       ...prev,
       [currentImageId]: prev[currentImageId].map(ann =>
         ann.id === draggedAnnotation.id
-          ? { ...ann, x: boundedX, y: boundedY }
+          ? { ...ann, x, y }
           : ann
       )
     }));
@@ -236,77 +308,244 @@ const ImageAnnotator = () => {
         <div class="page-container ${index > 0 ? 'mt-8 pt-8 border-t' : ''}">
           <h2 class="text-lg mb-4">Page ${index + 1}</h2>
           <div class="image-container">
-            <img src="${image.src}" style="max-width: 100%; height: auto;">
-            ${imageAnnotations.map(ann => `
-              <div class="annotation" style="left: ${ann.x}%; top: ${ann.y}%">
-                <button 
-                  class="marker ${ann.completed ? 'complete' : 'incomplete'}"
-                  onclick="togglePopup(${ann.id})"
-                >
-                  ${ann.completed ? '✓' : '!'}
-                </button>
-                <div id="popup-${ann.id}" class="popup" style="display: none">
-                  <p style="margin: 0 0 8px 0">${ann.note}</p>
-                  <div style="display: flex; justify-content: space-between">
-                    <button onclick="toggleComplete(${ann.id})" style="padding: 4px 8px">
-                      ${ann.completed ? 'Undo' : 'Complete'}
-                    </button>
+            <div class="image-wrapper">
+              <img src="${image.src}" alt="Page ${index + 1}" class="main-image">
+              <div class="annotations-layer">
+                ${imageAnnotations.map(ann => `
+                  <div class="annotation-wrapper">
+                    <div class="annotation" style="left: ${ann.x}%; top: ${ann.y}%">
+                      <button 
+                        class="marker ${ann.completed ? 'complete' : 'incomplete'}"
+                        onclick="togglePopup('${ann.id}')"
+                      >
+                        ${ann.completed ? '✓' : '!'}
+                      </button>
+                      <div id="popup-${ann.id}" class="popup">
+                        <div class="note-text">${ann.note}</div>
+                        <div class="button-container">
+                          <button onclick="toggleComplete('${ann.id}')" class="action-button">
+                            ${ann.completed ? 'Undo' : 'Complete'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                `).join('')}
               </div>
-            `).join('')}
+            </div>
           </div>
         </div>
       `;
     }).join('');
-    
+  
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <title>PLSFIX-THX Annotation</title>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; }
-          .container { max-width: 1200px; margin: 0 auto; }
-          .image-container { position: relative; display: inline-block; }
-          .annotation { position: absolute; transform: translate(-50%, -50%); }
-          .marker { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; border: none; }
-          .marker.incomplete { background-color: #3b82f6; }
-          .marker.complete { background-color: #22c55e; }
-          .popup { position: absolute; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10; width: 200px; margin-top: 8px; transform: translateX(-50%); }
-          .title { text-align: center; margin-bottom: 20px; }
+          .image-container { 
+            position: relative;
+            width: 100%;
+            max-width: 100vw;
+            margin: 0 auto;
+            background: #f8f9fa;
+            border-radius: 4px;
+            overflow: visible;
+          }
+          
+          .image-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+          
+          .main-image {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            position: relative;
+            z-index: 1;
+          }
+  
+          .annotations-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+          }
+  
+          .annotation-wrapper {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+          }
+          
+          .annotation { 
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            pointer-events: auto;
+          }
+          
+          .marker { 
+            width: clamp(24px, 6vmin, 32px);
+            height: clamp(24px, 6vmin, 32px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            border: 2px solid white;
+            font-size: clamp(14px, 3vmin, 16px);
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background-color: #3b82f6;
+            position: relative;
+            z-index: 3;
+          }
+          
+          .marker.complete { 
+            background-color: #22c55e;
+          }
+          
+          .popup { 
+            display: none;
+            position: absolute;
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            width: 280px;
+            border: 1px solid #e5e7eb;
+            top: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+          }
+
+          .note-text {
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #374151;
+            word-break: break-word;
+          }
+
+          .button-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+          }
+
+          .action-button {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: white;
+            color: #374151;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+          }
+
+          .action-button:hover {
+            background: #f9fafb;
+          }
+
+          @media (max-width: 767px) {
+            .popup {
+              position: fixed;
+              bottom: 20px;
+              top: auto;
+              left: 50%;
+              width: calc(100% - 32px);
+              max-width: 320px;
+            }
+          }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="title">
-            <h1>PLSFIX-THX</h1>
-            <p style="color: #666;">Exported annotations (${images.length} pages)</p>
-          </div>
           ${allPages}
         </div>
         <script>
           function togglePopup(id) {
             const popup = document.getElementById('popup-' + id);
             const allPopups = document.querySelectorAll('.popup');
+            const isMobile = window.innerWidth < 768;
+            
+            // Close all other popups
             allPopups.forEach(p => {
-              if (p !== popup) p.style.display = 'none';
+              if (p !== popup) {
+                p.style.display = 'none';
+              }
             });
-            popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+  
+            // Toggle current popup
+            if (popup.style.display === 'block') {
+              popup.style.display = 'none';
+            } else {
+              popup.style.display = 'block';
+              
+              if (!isMobile) {
+                // On desktop, check if popup goes outside viewport
+                const rect = popup.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
+                
+                if (rect.bottom > viewportHeight) {
+                  popup.style.top = 'auto';
+                  popup.style.bottom = '130%';
+                }
+                
+                if (rect.right > viewportWidth) {
+                  popup.style.left = 'auto';
+                  popup.style.right = '0';
+                  popup.style.transform = 'none';
+                } else if (rect.left < 0) {
+                  popup.style.left = '0';
+                  popup.style.right = 'auto';
+                  popup.style.transform = 'none';
+                }
+              }
+            }
           }
-
+  
           function toggleComplete(id) {
-            const marker = document.querySelector(\`[onclick="togglePopup(\${id})"]\`);
-            const isComplete = marker.classList.contains('complete');
+            const marker = document.querySelector(\`[onclick="togglePopup('\${id}')"]\`);
+            const popup = document.getElementById('popup-' + id);
+            const button = popup.querySelector('.action-button');
+            
             marker.classList.toggle('complete');
             marker.classList.toggle('incomplete');
-            marker.innerHTML = isComplete ? '!' : '✓';
+            marker.innerHTML = marker.classList.contains('complete') ? '✓' : '!';
+            button.textContent = marker.classList.contains('complete') ? 'Undo' : 'Complete';
           }
-
+  
+          // Close popups when clicking outside
           document.addEventListener('click', (e) => {
             if (!e.target.closest('.annotation')) {
-              document.querySelectorAll('.popup').forEach(p => p.style.display = 'none');
+              document.querySelectorAll('.popup').forEach(popup => {
+                popup.style.display = 'none';
+              });
+            }
+          });
+  
+          // Close popups on escape key
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              document.querySelectorAll('.popup').forEach(popup => {
+                popup.style.display = 'none';
+              });
             }
           });
         </script>
@@ -320,29 +559,38 @@ const ImageAnnotator = () => {
     setShowExportDialog({ visible: true, type });
   };
 
-  const handleExportSubmit = (e) => {
-    e.preventDefault();
-    const filename = e.target.filename.value.trim();
-    
-    if (showExportDialog.type === 'html') {
-      const html = generateExportableHtml();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename + '.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } else if (showExportDialog.type === 'png') {
-      handleExportPNG(filename);
-    }
-    
-    setShowExportDialog({ visible: false, type: null });
-  };
 
+// Update your handleExportSubmit function
+const handleExportSubmit = async (e) => {
+  e.preventDefault();
+  const filename = e.target.filename.value.trim();
+  
+  if (showExportDialog.type === 'html') {
+    const html = generateExportableHtml();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } else if (showExportDialog.type === 'png') {
+    handleExportPNG(filename);
+  }
+  
+  setShowExportDialog({ visible: false, type: null });
+};
+// The PNG export is only exporting one page even though images.length > 1
+// Need to fix handleExportPNG to properly handle multiple pages while keeping existing styling
+// Current issue: container.innerHTML = '' might be clearing too early
+// Requirements:
+// 1. Keep all existing styling and marker/note positioning
+// 2. Fix the loop to properly export all pages
+// 3. Maintain current quality settings (scale: 2, backgroundColor: 'white')
   const handleExportPNG = async (filename) => {
+    // Create a hidden container that will persist through all exports
     const container = document.createElement('div');
     container.style.position = 'absolute';
     container.style.left = '-9999px';
@@ -350,74 +598,83 @@ const ImageAnnotator = () => {
     document.body.appendChild(container);
 
     try {
-      // Process each image
+      // Process all images sequentially using for...of to ensure proper async handling
       for (let i = 0; i < images.length; i++) {
+        // Create a fresh container for each image
         const imageContainer = document.createElement('div');
         imageContainer.style.position = 'relative';
         imageContainer.style.display = 'inline-block';
-        imageContainer.style.padding = '20px';  // Add padding around the image
+        imageContainer.style.padding = '20px';
         
+        // Clear previous content and add new container
+        container.innerHTML = '';
+        container.appendChild(imageContainer);
+
         // Add the image
         const imgElement = document.createElement('img');
         imgElement.src = images[i].src;
         imgElement.style.maxWidth = '100%';
+        
+        // Wait for image to load before proceeding
+        await new Promise((resolve) => {
+          imgElement.onload = resolve;
+        });
+        
         imageContainer.appendChild(imgElement);
 
-        // Add visible annotations
+        // Add annotations for current image
         const imageAnnotations = annotations[images[i].id] || [];
         
-        imageAnnotations.forEach(ann => {
+        // Create all annotation elements
+        const annotationPromises = imageAnnotations.map(ann => {
           const marker = document.createElement('div');
           marker.style.position = 'absolute';
           marker.style.left = `${ann.x}%`;
           marker.style.top = `${ann.y}%`;
           marker.style.transform = 'translate(-50%, -50%)';
-          marker.style.width = '48px'; // Fixed width for marker container
-          marker.style.height = '48px'; // Fixed height for marker container
+          marker.style.width = '48px';
+          marker.style.height = '48px';
+          marker.style.zIndex = '1000';
 
-          // Improved marker button
           const button = document.createElement('div');
-          button.style.width = '48px'; // Larger fixed size
-          button.style.height = '48px'; // Larger fixed size
+          button.style.width = '48px';
+          button.style.height = '48px';
           button.style.borderRadius = '50%';
           button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
           button.style.color = 'white';
           button.style.display = 'flex';
           button.style.alignItems = 'center';
           button.style.justifyContent = 'center';
-          button.style.border = '3px solid white'; // Thicker border
+          button.style.border = '3px solid white';
           button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-          button.style.position = 'relative'; // For centering the icon
+          button.style.position = 'relative';
           
-          // Better icon styling
           const icon = document.createElement('div');
           icon.style.position = 'absolute';
           icon.style.left = '50%';
           icon.style.top = '50%';
           icon.style.transform = 'translate(-50%, -50%)';
-          icon.style.fontSize = '28px'; // Larger font size
+          icon.style.fontSize = '28px';
           icon.style.fontFamily = 'system-ui, -apple-system, sans-serif';
           icon.style.fontWeight = 'bold';
           icon.style.lineHeight = '1';
           icon.innerHTML = ann.completed ? '✓' : '!';
           button.appendChild(icon);
           
-          // Improved note style
           const note = document.createElement('div');
           note.style.position = 'absolute';
           note.style.backgroundColor = 'white';
-          note.style.padding = '16px 24px'; // More padding
-          note.style.borderRadius = '12px'; // Larger radius
+          note.style.padding = '16px 24px';
+          note.style.borderRadius = '12px';
           note.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2), 0 0 0 2px rgba(0,0,0,0.1)';
-          note.style.fontSize = '28px'; // Larger font
+          note.style.fontSize = '28px';
           note.style.fontWeight = '500';
-          note.style.top = '130%'; // More spacing from marker
+          note.style.top = '130%';
           note.style.left = '50%';
           note.style.transform = 'translateX(-50%)';
-          note.style.marginTop = '12px';
           note.style.whiteSpace = 'normal';
-          note.style.maxWidth = '400px'; // Wider notes
-          note.style.minWidth = '200px'; // Minimum width
+          note.style.maxWidth = '400px';
+          note.style.minWidth = '200px';
           note.style.color = '#000000';
           note.style.lineHeight = '1.4';
           note.style.textAlign = 'left';
@@ -427,30 +684,41 @@ const ImageAnnotator = () => {
           
           marker.appendChild(button);
           marker.appendChild(note);
-          imageContainer.appendChild(marker);
+          return marker;
         });
 
-        container.appendChild(imageContainer);
+        // Add all annotations to the container
+        const annotationElements = await Promise.all(annotationPromises);
+        annotationElements.forEach(element => {
+          imageContainer.appendChild(element);
+        });
+
+        // Wait a brief moment for all styles to be applied
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Generate canvas for current page
         const canvas = await html2canvas(imageContainer, {
           backgroundColor: 'white',
-          scale: 2,  // Higher quality
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          allowTaint: true,
+          imageTimeout: 0,
         });
         
-        // Download individual PNG
+        // Create download link for current page
         const dataUrl = canvas.toDataURL('image/png');
         const a = document.createElement('a');
         a.href = dataUrl;
-        a.download = `${filename}-page${i + 1}.png`;
+        a.download = images.length > 1 ? 
+          `${filename}-page${i + 1}.png` : 
+          `${filename}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-
-        // Clear container for next image
-        container.innerHTML = '';
       }
     } finally {
+      // Clean up the container after all exports are done
       document.body.removeChild(container);
     }
   };
@@ -591,13 +859,101 @@ const ImageAnnotator = () => {
                 onMouseUp={handleDragEnd}
                 onTouchStart={handleTouchStart}
               >
-                <img
-                  ref={imageRef}
-                  src={images[currentImageIndex].src}
-                  alt={`Image ${currentImageIndex + 1}`}
-                  className="max-w-full h-auto"
-                  onDoubleClick={handleImageDoubleClick}
-                />
+                <div className="relative w-full bg-gray-50" style={{ minHeight: '400px' }}>
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <div className="relative max-w-full max-h-[800px] flex items-center justify-center">
+                      <img
+                        ref={imageRef}
+                        src={images[currentImageIndex]?.src}
+                        alt={`Image ${currentImageIndex + 1}`}
+                        className="w-auto h-auto object-contain max-w-full max-h-[800px]"
+                        onDoubleClick={handleImageDoubleClick}
+                        style={{ 
+                          display: 'block',
+                          margin: 'auto'
+                        }}
+                      />
+                      
+                      <div 
+                        ref={annotationsRef}
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                          width: '100%',
+                          height: '100%'
+                        }}
+                        onMouseMove={handleDrag}
+                        onTouchMove={handleDrag}
+                        onMouseUp={() => setDraggedAnnotation(null)}
+                        onTouchEnd={() => setDraggedAnnotation(null)}
+                      >
+                        {currentAnnotations.map((annotation) => (
+                          <div
+                            key={annotation.id}
+                            className="absolute"
+                            style={{
+                              left: `${annotation.x}%`,
+                              top: `${annotation.y}%`,
+                              transform: 'translate(-50%, -50%)',
+                              cursor: draggedAnnotation?.id === annotation.id ? 'grabbing' : 'grab',
+                              pointerEvents: 'auto',
+                              zIndex: draggedAnnotation?.id === annotation.id ? 1000 : 1
+                            }}
+                          >
+                            <button
+                              onMouseDown={(e) => handleDragStart(annotation, e)}
+                              onTouchStart={(e) => handleDragStart(annotation, e)}
+                              onClick={(e) => !draggedAnnotation && toggleAnnotation(annotation, e)}
+                              className={`w-8 h-8 md:w-6 md:h-6 rounded-full flex items-center justify-center ${
+                                annotation.completed ? 'bg-green-500' : 'bg-blue-500'
+                              } text-white hover:opacity-90 transition-opacity`}
+                            >
+                              {annotation.completed ? (
+                                <Check className="w-5 h-5 md:w-4 md:h-4" />
+                              ) : (
+                                <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
+                              )}
+                            </button>
+
+                            {selectedAnnotation?.id === annotation.id && (
+                              <div
+                                ref={popupRef}
+                                className="absolute z-10 bg-white p-4 rounded-lg shadow-lg w-64 md:w-72"
+                                style={{
+                                  top: '130%',
+                                  left: '50%',
+                                  transform: 'translateX(-50%)',
+                                  border: '1px solid #e5e7eb',
+                                }}
+                              >
+                                <p className="mb-4 text-sm text-gray-700 break-words">{annotation.note}</p>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => toggleCompletion(annotation.id, e)}
+                                    className="flex-1 h-9 text-sm"
+                                  >
+                                    <Check className="w-4 h-4 mr-1" />
+                                    {annotation.completed ? 'Undo' : 'Complete'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => deleteAnnotation(annotation.id, e)}
+                                    className="flex-1 h-9 text-sm"
+                                  >
+                                    <X className="w-4 h-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 {noteInput.visible && (
                   <>
@@ -654,62 +1010,6 @@ const ImageAnnotator = () => {
                     </div>
                   </>
                 )}
-
-                {currentAnnotations.map((annotation) => (
-                  <div
-                    key={annotation.id}
-                    className="absolute touch-manipulation"
-                    style={{
-                      left: `${annotation.x}%`,
-                      top: `${annotation.y}%`,
-                      transform: 'translate(-50%, -50%)',
-                      cursor: 'move'
-                    }}
-                  >
-                    <button
-                      onMouseDown={(e) => handleDragStart(annotation, e)}
-                      onClick={(e) => toggleAnnotation(annotation, e)}
-                      className={`w-8 h-8 md:w-6 md:h-6 rounded-full flex items-center justify-center ${
-                        annotation.completed ? 'bg-green-500' : 'bg-blue-500'
-                      } text-white hover:opacity-90 transition-opacity`}
-                    >
-                      {annotation.completed ? (
-                        <Check className="w-5 h-5 md:w-4 md:h-4" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
-                      )}
-                    </button>
-
-                    {selectedAnnotation?.id === annotation.id && (
-                      <div
-                        ref={popupRef}
-                        className="absolute z-10 bg-white p-4 rounded-lg shadow-lg -translate-x-1/2 mt-2 w-64 md:w-56"
-                      >
-                        <p className="mb-3 text-base">{annotation.note}</p>
-                        <div className="flex justify-between gap-2">
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={(e) => toggleCompletion(annotation.id, e)}
-                            className="flex-1 items-center gap-1 py-3"
-                          >
-                            <Check className="w-4 h-4" />
-                            {annotation.completed ? 'Undo' : 'Complete'}
-                          </Button>
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={(e) => deleteAnnotation(annotation.id, e)}
-                            className="flex-1 items-center gap-1 py-3"
-                          >
-                            <X className="w-4 h-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
               </div>
             </>
           )}
