@@ -7,6 +7,7 @@ import html2canvas from 'html2canvas';
 import ExportDialog from './ExportDialog';
 // Add jsPDF import
 import { jsPDF } from 'jspdf';
+import { Analytics } from '@vercel/analytics/react';
 
 const ImageAnnotator = () => {
   const [images, setImages] = useState([]);  // Array of {id, src}
@@ -834,6 +835,7 @@ const handleExportPNG = async (filename) => {
 
   return (
     <div className="relative">
+      <Analytics />
       {showExportDialog.visible && (
         <ExportDialog
           onSubmit={handleExportSubmit}
