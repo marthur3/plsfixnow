@@ -14,6 +14,8 @@ const ImageAnnotator = () => {
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
   const [noteInput, setNoteInput] = useState({ visible: false, x: 0, y: 0 });
   const [noteText, setNoteText] = useState('');
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
   const [draggedAnnotation, setDraggedAnnotation] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState({ visible: false, type: null });
@@ -26,6 +28,9 @@ const ImageAnnotator = () => {
 
   // Add reference for annotations container
   const annotationsRef = useRef(null);
+
+  const [lastTap, setLastTap] = useState(0);
+  const [touchMoved, setTouchMoved] = useState(false);
 
   useEffect(() => {
     const handlePaste = async (e) => {
@@ -158,7 +163,41 @@ const ImageAnnotator = () => {
   const handleTouchStart = (e) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
-      handleImageDoubleClick(touch);
+      setTouchStartTime(Date.now());
+      const { x, y } = getRelativeCoordinates(touch.clientX, touch.clientY);
+      setTouchStartPos({ x, y });
+      setTouchMoved(false);
+    }
+  };
+
+  const handleTouchMove = () => {
+    setTouchMoved(true);
+  };
+
+  const handleTouchEnd = (e) => {
+    const now = Date.now();
+    const touchDuration = now - touchStartTime;
+    
+    // Detect double tap
+    if (!touchMoved) {
+      const DOUBLE_TAP_DELAY = 300;
+      if (now - lastTap < DOUBLE_TAP_DELAY) {
+        // Double tap detected
+        e.preventDefault();
+        setNoteInput({
+          visible: true,
+          x: touchStartPos.x,
+          y: touchStartPos.y
+        });
+        
+        setTimeout(() => {
+          const input = document.querySelector('#noteInput');
+          if (input) input.focus();
+        }, 100);
+      } else {
+        // Single tap
+        setLastTap(now);
+      }
     }
   };
 
@@ -858,6 +897,8 @@ const handleExportSubmit = async (e) => {
                 onMouseMove={handleDrag}
                 onMouseUp={handleDragEnd}
                 onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               >
                 <div className="relative w-full bg-gray-50" style={{ minHeight: '400px' }}>
                   <div className="relative w-full h-full flex items-center justify-center">
