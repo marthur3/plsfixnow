@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import Instructions from './Instructions';
 import html2canvas from 'html2canvas';
 import ExportDialog from './ExportDialog';
-
+// Add jsPDF import
+import { jsPDF } from 'jspdf';
 
 const ImageAnnotator = () => {
   const [images, setImages] = useState([]);  // Array of {id, src}
@@ -628,139 +629,144 @@ const handleExportSubmit = async (e) => {
 // 1. Keep all existing styling and marker/note positioning
 // 2. Fix the loop to properly export all pages
 // 3. Maintain current quality settings (scale: 2, backgroundColor: 'white')
-  const handleExportPNG = async (filename) => {
-    // Create a hidden container that will persist through all exports
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.top = '-9999px';
-    document.body.appendChild(container);
+const handleExportPNG = async (filename) => {
+  // Create a hidden container that will persist through all exports
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '-9999px';
+  document.body.appendChild(container);
 
-    try {
-      // Process all images sequentially using for...of to ensure proper async handling
-      for (let i = 0; i < images.length; i++) {
-        // Create a fresh container for each image
-        const imageContainer = document.createElement('div');
-        imageContainer.style.position = 'relative';
-        imageContainer.style.display = 'inline-block';
-        imageContainer.style.padding = '20px';
+  try {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px'
+    });
+    
+    for (let i = 0; i < images.length; i++) {
+      const imageContainer = document.createElement('div');
+      imageContainer.style.position = 'relative';
+      imageContainer.style.display = 'inline-block';
+      imageContainer.style.padding = '20px';
+      
+      container.innerHTML = '';
+      container.appendChild(imageContainer);
+
+      const imgElement = document.createElement('img');
+      imgElement.src = images[i].src;
+      imgElement.style.maxWidth = '100%';
+      
+      await new Promise((resolve) => {
+        imgElement.onload = resolve;
+      });
+      
+      imageContainer.appendChild(imgElement);
+
+      // Fix annotation creation
+      const imageAnnotations = annotations[images[i].id] || [];
+      for (const ann of imageAnnotations) {
+        const marker = document.createElement('div');
+        marker.style.position = 'absolute';
+        marker.style.left = `${ann.x}%`;
+        marker.style.top = `${ann.y}%`;
+        marker.style.transform = 'translate(-50%, -50%)';
+        marker.style.width = '48px';
+        marker.style.height = '48px';
+        marker.style.zIndex = '1000';
+
+        const button = document.createElement('div');
+        button.style.width = '48px';
+        button.style.height = '48px';
+        button.style.borderRadius = '50%';
+        button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
+        button.style.color = 'white';
+        button.style.display = 'flex';
+        button.style.alignItems = 'center';
+        button.style.justifyContent = 'center';
+        button.style.border = '3px solid white';
+        button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        button.style.position = 'relative';
         
-        // Clear previous content and add new container
-        container.innerHTML = '';
-        container.appendChild(imageContainer);
-
-        // Add the image
-        const imgElement = document.createElement('img');
-        imgElement.src = images[i].src;
-        imgElement.style.maxWidth = '100%';
+        const icon = document.createElement('div');
+        icon.style.position = 'absolute';
+        icon.style.left = '50%';
+        icon.style.top = '50%';
+        icon.style.transform = 'translate(-50%, -50%)';
+        icon.style.fontSize = '28px';
+        icon.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+        icon.style.fontWeight = 'bold';
+        icon.style.lineHeight = '1';
+        icon.innerHTML = ann.completed ? '✓' : '!';
         
-        // Wait for image to load before proceeding
-        await new Promise((resolve) => {
-          imgElement.onload = resolve;
-        });
+        button.appendChild(icon);
+        marker.appendChild(button);
         
-        imageContainer.appendChild(imgElement);
-
-        // Add annotations for current image
-        const imageAnnotations = annotations[images[i].id] || [];
+        // Add note text
+        const note = document.createElement('div');
+        note.style.position = 'absolute';
+        note.style.backgroundColor = 'white';
+        note.style.padding = '16px 24px';
+        note.style.borderRadius = '12px';
+        note.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2), 0 0 0 2px rgba(0,0,0,0.1)';
+        note.style.fontSize = '28px';
+        note.style.fontWeight = '500';
+        note.style.top = '130%';
+        note.style.left = '50%';
+        note.style.transform = 'translateX(-50%)';
+        note.style.whiteSpace = 'normal';
+        note.style.maxWidth = '400px';
+        note.style.minWidth = '200px';
+        note.style.color = '#000000';
+        note.style.lineHeight = '1.4';
+        note.style.textAlign = 'left';
+        note.style.border = '2px solid #e5e7eb';
+        note.style.zIndex = '1000';
+        note.textContent = ann.note;
         
-        // Create all annotation elements
-        const annotationPromises = imageAnnotations.map(ann => {
-          const marker = document.createElement('div');
-          marker.style.position = 'absolute';
-          marker.style.left = `${ann.x}%`;
-          marker.style.top = `${ann.y}%`;
-          marker.style.transform = 'translate(-50%, -50%)';
-          marker.style.width = '48px';
-          marker.style.height = '48px';
-          marker.style.zIndex = '1000';
-
-          const button = document.createElement('div');
-          button.style.width = '48px';
-          button.style.height = '48px';
-          button.style.borderRadius = '50%';
-          button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
-          button.style.color = 'white';
-          button.style.display = 'flex';
-          button.style.alignItems = 'center';
-          button.style.justifyContent = 'center';
-          button.style.border = '3px solid white';
-          button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-          button.style.position = 'relative';
-          
-          const icon = document.createElement('div');
-          icon.style.position = 'absolute';
-          icon.style.left = '50%';
-          icon.style.top = '50%';
-          icon.style.transform = 'translate(-50%, -50%)';
-          icon.style.fontSize = '28px';
-          icon.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-          icon.style.fontWeight = 'bold';
-          icon.style.lineHeight = '1';
-          icon.innerHTML = ann.completed ? '✓' : '!';
-          button.appendChild(icon);
-          
-          const note = document.createElement('div');
-          note.style.position = 'absolute';
-          note.style.backgroundColor = 'white';
-          note.style.padding = '16px 24px';
-          note.style.borderRadius = '12px';
-          note.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2), 0 0 0 2px rgba(0,0,0,0.1)';
-          note.style.fontSize = '28px';
-          note.style.fontWeight = '500';
-          note.style.top = '130%';
-          note.style.left = '50%';
-          note.style.transform = 'translateX(-50%)';
-          note.style.whiteSpace = 'normal';
-          note.style.maxWidth = '400px';
-          note.style.minWidth = '200px';
-          note.style.color = '#000000';
-          note.style.lineHeight = '1.4';
-          note.style.textAlign = 'left';
-          note.style.border = '2px solid #e5e7eb';
-          note.style.zIndex = '1000';
-          note.textContent = ann.note;
-          
-          marker.appendChild(button);
-          marker.appendChild(note);
-          return marker;
-        });
-
-        // Add all annotations to the container
-        const annotationElements = await Promise.all(annotationPromises);
-        annotationElements.forEach(element => {
-          imageContainer.appendChild(element);
-        });
-
-        // Wait a brief moment for all styles to be applied
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Generate canvas for current page
-        const canvas = await html2canvas(imageContainer, {
-          backgroundColor: 'white',
-          scale: 2,
-          logging: false,
-          useCORS: true,
-          allowTaint: true,
-          imageTimeout: 0,
-        });
-        
-        // Create download link for current page
-        const dataUrl = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = images.length > 1 ? 
-          `${filename}-page${i + 1}.png` : 
-          `${filename}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        marker.appendChild(note);
+        imageContainer.appendChild(marker);
       }
-    } finally {
-      // Clean up the container after all exports are done
-      document.body.removeChild(container);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(imageContainer, {
+        backgroundColor: 'white',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        imageTimeout: 0,
+      });
+      
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imageWidth = canvas.width;
+      const imageHeight = canvas.height;
+      
+      let finalWidth = pageWidth;
+      let finalHeight = (imageHeight * pageWidth) / imageWidth;
+
+      if (finalHeight > pageHeight) {
+        finalHeight = pageHeight;
+        finalWidth = (imageWidth * pageHeight) / imageHeight;
+      }
+
+      const x = (pageWidth - finalWidth) / 2;
+      const y = (pageHeight - finalHeight) / 2;
+
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, finalWidth, finalHeight);
     }
-  };
+
+    pdf.save(`${filename}.pdf`);
+
+  } finally {
+    document.body.removeChild(container);
+  }
+};
 
   const currentAnnotations = images[currentImageIndex]
     ? annotations[images[currentImageIndex].id] || []
@@ -886,8 +892,8 @@ const handleExportSubmit = async (e) => {
                     className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
                   >
                     <ImageIcon className="w-4 h-4" />
-                    <span className="hidden md:inline">Export PNG</span>
-                    <span className="md:hidden">PNG</span>
+                    <span className="hidden md:inline">Export PDF</span>
+                    <span className="md:hidden">PDF</span>
                   </Button>
                 </div>
               </div>
