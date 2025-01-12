@@ -1062,6 +1062,19 @@ const handleExportPNG = async (filename) => {
           )}
         </div>
       </Card>
+      <div className="mt-6 text-center border-t border-gray-200 pt-4">
+  <p className="text-sm text-gray-500">
+    Created by{" "}
+    <a 
+      href="https://www.linkedin.com/in/michael-bradford-arthur/" 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="text-blue-500 hover:text-blue-700 transition-colors"
+    >
+      Mikey B. Arthur
+    </a>
+  </p>
+</div>
     </div>
   );
 };
