@@ -357,6 +357,8 @@ const ImageAnnotator = () => {
                       <button 
                         class="marker ${ann.completed ? 'complete' : 'incomplete'}"
                         onclick="togglePopup('${ann.id}')"
+                        data-id="${ann.id}"
+                        ontouchstart="togglePopup('${ann.id}')"
                       >
                         ${ann.completed ? '✓' : '!'}
                       </button>
@@ -386,6 +388,21 @@ const ImageAnnotator = () => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+          * {
+            -webkit-tap-highlight-color: transparent;
+          }
+          
+          .popup-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+          }
+          
           .image-container { 
             position: relative;
             width: 100%;
@@ -468,20 +485,20 @@ const ImageAnnotator = () => {
             left: 50%;
             transform: translateX(-50%);
           }
-
+  
           .note-text {
             margin-bottom: 16px;
             font-size: 14px;
             color: #374151;
             word-break: break-word;
           }
-
+  
           .button-container {
             display: flex;
             gap: 8px;
             align-items: center;
           }
-
+  
           .action-button {
             flex: 1;
             padding: 8px 12px;
@@ -496,11 +513,11 @@ const ImageAnnotator = () => {
             justify-content: center;
             min-height: 36px;
           }
-
+  
           .action-button:hover {
             background: #f9fafb;
           }
-
+  
           @media (max-width: 767px) {
             .popup {
               position: fixed;
@@ -514,14 +531,37 @@ const ImageAnnotator = () => {
         </style>
       </head>
       <body>
-        <div class="container">
-          ${allPages}
-        </div>
-        <script>
+      <div class="container">
+        ${allPages}
+      <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 14px;">
+            Created with 
+            <a 
+              href="https://plsfixnow.vercel.app" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style="color: #3b82f6; text-decoration: none;"
+            >
+              PLSFIX-THX
+            </a>
+             by 
+            <a 
+              href="https://www.linkedin.com/in/michael-arthur" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style="color: #3b82f6; text-decoration: none;"
+            >
+              Michael Arthur
+            </a>
+          </p>
+        </footer>
+      </div>
+      <script>
           function togglePopup(id) {
             const popup = document.getElementById('popup-' + id);
             const allPopups = document.querySelectorAll('.popup');
             const isMobile = window.innerWidth < 768;
+            const marker = document.querySelector(\`[data-id="\${id}"]\`);
             
             // Close all other popups
             allPopups.forEach(p => {
@@ -533,35 +573,35 @@ const ImageAnnotator = () => {
             // Toggle current popup
             if (popup.style.display === 'block') {
               popup.style.display = 'none';
+              marker.classList.remove('active');
             } else {
               popup.style.display = 'block';
+              marker.classList.add('active');
               
-              if (!isMobile) {
-                // On desktop, check if popup goes outside viewport
-                const rect = popup.getBoundingClientRect();
-                const viewportHeight = window.innerHeight;
-                const viewportWidth = window.innerWidth;
+              if (isMobile) {
+                // On mobile, position popup at the bottom of the screen
+                popup.style.position = 'fixed';
+                popup.style.bottom = '20px';
+                popup.style.left = '50%';
+                popup.style.transform = 'translateX(-50%)';
+                popup.style.top = 'auto';
+                popup.style.width = 'calc(100% - 32px)';
+                popup.style.maxWidth = '320px';
                 
-                if (rect.bottom > viewportHeight) {
-                  popup.style.top = 'auto';
-                  popup.style.bottom = '130%';
+                // Add backdrop on mobile
+                let backdrop = document.querySelector('.popup-backdrop');
+                if (!backdrop) {
+                  backdrop = document.createElement('div');
+                  backdrop.className = 'popup-backdrop';
+                  document.body.appendChild(backdrop);
                 }
-                
-                if (rect.right > viewportWidth) {
-                  popup.style.left = 'auto';
-                  popup.style.right = '0';
-                  popup.style.transform = 'none';
-                } else if (rect.left < 0) {
-                  popup.style.left = '0';
-                  popup.style.right = 'auto';
-                  popup.style.transform = 'none';
-                }
+                backdrop.style.display = 'block';
               }
             }
           }
   
           function toggleComplete(id) {
-            const marker = document.querySelector(\`[onclick="togglePopup('\${id}')"]\`);
+            const marker = document.querySelector(\`[data-id="\${id}"]\`);
             const popup = document.getElementById('popup-' + id);
             const button = popup.querySelector('.action-button');
             
@@ -574,20 +614,28 @@ const ImageAnnotator = () => {
           // Close popups when clicking outside
           document.addEventListener('click', (e) => {
             if (!e.target.closest('.annotation')) {
-              document.querySelectorAll('.popup').forEach(popup => {
-                popup.style.display = 'none';
-              });
+              closeAllPopups();
             }
           });
-  
-          // Close popups on escape key
-          document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-              document.querySelectorAll('.popup').forEach(popup => {
-                popup.style.display = 'none';
-              });
+          
+          document.addEventListener('touchend', (e) => {
+            if (e.target.classList.contains('popup-backdrop')) {
+              closeAllPopups();
             }
           });
+          
+          function closeAllPopups() {
+            document.querySelectorAll('.popup').forEach(popup => {
+              popup.style.display = 'none';
+            });
+            document.querySelectorAll('.marker').forEach(marker => {
+              marker.classList.remove('active');
+            });
+            const backdrop = document.querySelector('.popup-backdrop');
+            if (backdrop) {
+              backdrop.style.display = 'none';
+            }
+          }
         </script>
       </body>
       </html>
@@ -630,7 +678,6 @@ const handleExportSubmit = async (e) => {
 // 2. Fix the loop to properly export all pages
 // 3. Maintain current quality settings (scale: 2, backgroundColor: 'white')
 const handleExportPNG = async (filename) => {
-  // Create a hidden container that will persist through all exports
   const container = document.createElement('div');
   container.style.position = 'absolute';
   container.style.left = '-9999px';
@@ -648,13 +695,25 @@ const handleExportPNG = async (filename) => {
       imageContainer.style.position = 'relative';
       imageContainer.style.display = 'inline-block';
       imageContainer.style.padding = '20px';
+      imageContainer.style.maxWidth = '1200px'; // Limit max width for consistency
       
       container.innerHTML = '';
       container.appendChild(imageContainer);
 
+      // Add page header
+      const header = document.createElement('h2');
+      header.style.fontSize = '24px';
+      header.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+      header.style.fontWeight = '600';
+      header.style.color = '#111827';
+      header.style.marginBottom = '16px';
+      header.textContent = `Page ${i + 1}`;
+      imageContainer.appendChild(header);
+
       const imgElement = document.createElement('img');
       imgElement.src = images[i].src;
       imgElement.style.maxWidth = '100%';
+      imgElement.style.display = 'block';
       
       await new Promise((resolve) => {
         imgElement.onload = resolve;
@@ -662,7 +721,7 @@ const handleExportPNG = async (filename) => {
       
       imageContainer.appendChild(imgElement);
 
-      // Fix annotation creation
+      // Fix annotation creation with consistent sizes
       const imageAnnotations = annotations[images[i].id] || [];
       for (const ann of imageAnnotations) {
         const marker = document.createElement('div');
@@ -670,62 +729,63 @@ const handleExportPNG = async (filename) => {
         marker.style.left = `${ann.x}%`;
         marker.style.top = `${ann.y}%`;
         marker.style.transform = 'translate(-50%, -50%)';
-        marker.style.width = '48px';
-        marker.style.height = '48px';
-        marker.style.zIndex = '1000';
 
-        const button = document.createElement('div');
-        button.style.width = '48px';
-        button.style.height = '48px';
+        const button = document.createElement('button');
+        button.style.width = '32px';
+        button.style.height = '32px';
         button.style.borderRadius = '50%';
         button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
         button.style.color = 'white';
         button.style.display = 'flex';
         button.style.alignItems = 'center';
         button.style.justifyContent = 'center';
-        button.style.border = '3px solid white';
+        button.style.border = '2px solid white';
         button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-        button.style.position = 'relative';
-        
-        const icon = document.createElement('div');
-        icon.style.position = 'absolute';
-        icon.style.left = '50%';
-        icon.style.top = '50%';
-        icon.style.transform = 'translate(-50%, -50%)';
-        icon.style.fontSize = '28px';
-        icon.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-        icon.style.fontWeight = 'bold';
-        icon.style.lineHeight = '1';
-        icon.innerHTML = ann.completed ? '✓' : '!';
-        
-        button.appendChild(icon);
+        button.style.fontSize = '20px';
+        button.style.fontWeight = 'bold';
+        button.style.lineHeight = '1';
+        button.style.padding = '0';
+        button.style.cursor = 'pointer';
+        button.innerHTML = ann.completed ? '✓' : '!';
+
         marker.appendChild(button);
-        
-        // Add note text
+
+        // Add note text with consistent sizing
         const note = document.createElement('div');
         note.style.position = 'absolute';
         note.style.backgroundColor = 'white';
-        note.style.padding = '16px 24px';
-        note.style.borderRadius = '12px';
-        note.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2), 0 0 0 2px rgba(0,0,0,0.1)';
-        note.style.fontSize = '28px';
-        note.style.fontWeight = '500';
+        note.style.padding = '12px 16px';
+        note.style.borderRadius = '8px';
+        note.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
         note.style.top = '130%';
         note.style.left = '50%';
         note.style.transform = 'translateX(-50%)';
-        note.style.whiteSpace = 'normal';
-        note.style.maxWidth = '400px';
-        note.style.minWidth = '200px';
-        note.style.color = '#000000';
-        note.style.lineHeight = '1.4';
-        note.style.textAlign = 'left';
-        note.style.border = '2px solid #e5e7eb';
+        note.style.width = '240px'; // Fixed width
+        note.style.color = '#374151';
+        note.style.border = '1px solid #e5e7eb';
         note.style.zIndex = '1000';
+        note.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+        note.style.fontSize = '14px'; // Consistent font size
+        note.style.fontWeight = '400';
+        note.style.lineHeight = '1.4';
         note.textContent = ann.note;
         
         marker.appendChild(note);
         imageContainer.appendChild(marker);
       }
+
+      // Update footer styling
+      const footer = document.createElement('div');
+      footer.style.textAlign = 'center';
+      footer.style.padding = '16px';
+      footer.style.marginTop = '24px';
+      footer.style.borderTop = '1px solid #e5e7eb';
+      footer.style.color = '#6b7280';
+      footer.style.fontSize = '12px';
+      footer.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+      footer.innerHTML = `Created with plsfixnow.vercel.app`;
+
+      imageContainer.appendChild(footer);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -737,7 +797,7 @@ const handleExportPNG = async (filename) => {
         allowTaint: true,
         imageTimeout: 0,
       });
-      
+
       if (i > 0) {
         pdf.addPage();
       }
@@ -788,16 +848,38 @@ const handleExportPNG = async (filename) => {
           showInstructions ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="p-4 h-full overflow-y-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute left-0 top-4 -translate-x-full bg-white shadow-lg rounded-l-lg p-2"
-            onClick={() => setShowInstructions(!showInstructions)}
-          >
-            <HelpCircle className="w-5 h-5" />
-          </Button>
-          <Instructions hasImages={images.length > 0} />
+        {/* Add semi-transparent backdrop for mobile only */}
+        <div 
+          className="fixed inset-0 bg-black/50 md:hidden"
+          onClick={() => setShowInstructions(false)}
+        />
+        
+        <div className="relative h-full bg-white">
+          <div className="p-4 h-full overflow-y-auto">
+            {/* Mobile Close Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-2 top-2 md:hidden"
+              onClick={() => setShowInstructions(false)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+            
+            {/* Desktop Toggle Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute left-0 top-4 -translate-x-full bg-white shadow-lg rounded-l-lg p-2 hidden md:flex"
+              onClick={() => setShowInstructions(!showInstructions)}
+            >
+              <HelpCircle className="w-5 h-5" />
+            </Button>
+
+            <div className="pt-12 md:pt-0">
+              <Instructions hasImages={images.length > 0} />
+            </div>
+          </div>
         </div>
       </div>
 

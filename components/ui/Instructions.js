@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
 const Instructions = ({ hasImages }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(true);  // Keep this to maintain default open state
 
   const initialInstructions = [
     "Paste (Ctrl+V) or upload a screenshot to get started",
@@ -22,7 +22,7 @@ const Instructions = ({ hasImages }) => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">
+      <h2 className="text-lg font-semibold hidden md:block">
         {hasImages ? "Annotation Instructions" : "Getting Started"}
       </h2>
       
