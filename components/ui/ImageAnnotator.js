@@ -37,6 +37,16 @@ const ImageAnnotator = () => {
   const [showFAB, setShowFAB] = useState(true);
   const lastScrollPosition = useRef(0);
 
+  // Add new state for clipboard feedback
+  const [clipboardFeedback, setClipboardFeedback] = useState(null);
+
+  // Add canShare detection
+  const [canShare, setCanShare] = useState(false);
+  
+  useEffect(() => {
+    setCanShare(!!navigator.share);
+  }, []);
+
   useEffect(() => {
     const handlePaste = async (e) => {
       if (!containerRef.current?.contains(e.target)) return;
@@ -997,6 +1007,42 @@ const handleExportPNG = async (filename) => {
     });
   };
 
+  // Add share handler
+  const handleShare = async () => {
+    try {
+      const blob = await generatePDF();
+      const file = new File([blob], 'annotations.pdf', { type: 'application/pdf' });
+      
+      await navigator.share({
+        files: [file],
+        title: 'PLSFIX Annotations',
+        text: 'Check out my annotations!'
+      });
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+    setShowExportDialog({ visible: false });
+  };
+
+  // Add clipboard handler
+  const handleCopyToClipboard = async () => {
+    try {
+      const blob = await generatePDF();
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'application/pdf': blob
+        })
+      ]);
+      setClipboardFeedback('Copied to clipboard!');
+      setTimeout(() => setClipboardFeedback(null), 2000);
+    } catch (error) {
+      console.error('Copy failed:', error);
+      setClipboardFeedback('Copy failed');
+      setTimeout(() => setClipboardFeedback(null), 2000);
+    }
+    setShowExportDialog({ visible: false });
+  };
+
   // Update the backdrop click handler
   const handleBackdropClick = (e) => {
     // Only close if clicking the backdrop itself, not its children
@@ -1014,6 +1060,9 @@ const handleExportPNG = async (filename) => {
           onSubmit={handleExportSubmit}
           onClose={() => setShowExportDialog({ visible: false, type: null })}
           defaultName={`annotation-${currentImageIndex + 1}`}
+          onShare={handleShare}
+          onCopy={handleCopyToClipboard}
+          canShare={canShare}
         />
       )}
 
@@ -1353,6 +1402,12 @@ const handleExportPNG = async (filename) => {
           >
             <Plus className="h-6 w-6" />
           </Button>
+        </div>
+      )}
+      {/* Add clipboard feedback toast */}
+      {clipboardFeedback && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg">
+          {clipboardFeedback}
         </div>
       )}
     </div>
