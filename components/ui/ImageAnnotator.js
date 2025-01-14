@@ -204,36 +204,28 @@ const ImageAnnotator = () => {
   };
 
   // Updated coordinate calculation helper
-  const getRelativeCoordinates = (clientX, clientY) => {
-    if (!imageRef.current || !annotationsRef.current) return { x: 0, y: 0 };
-    
-    const imageRect = imageRef.current.getBoundingClientRect();
-    const containerRect = annotationsRef.current.getBoundingClientRect();
-
-    // Calculate the actual rendered image position within the container
-    const imageWidth = imageRect.width;
-    const imageHeight = imageRect.height;
-    const containerWidth = containerRect.width;
-    const containerHeight = containerRect.height;
-
-    // Calculate the offset of the image within the container
-    const offsetX = (containerWidth - imageWidth) / 2;
-    const offsetY = (containerHeight - imageHeight) / 2;
-
-    // Calculate the position relative to the actual image area
-    const imageX = clientX - (containerRect.left + offsetX);
-    const imageY = clientY - (containerRect.top + offsetY);
-
-    // Convert to percentages within the actual image area
-    const x = (imageX / imageWidth) * 100;
-    const y = (imageY / imageHeight) * 100;
-
-    // Ensure coordinates are within bounds
-    return {
-      x: Math.max(0, Math.min(100, x)),
-      y: Math.max(0, Math.min(100, y))
-    };
+  // Update getRelativeCoordinates to store positions relative to natural image dimensions
+const getRelativeCoordinates = (clientX, clientY) => {
+  if (!imageRef.current || !annotationsRef.current) return { x: 0, y: 0 };
+  
+  const imageRect = imageRef.current.getBoundingClientRect();
+  const naturalWidth = imageRef.current.naturalWidth;
+  const naturalHeight = imageRef.current.naturalHeight;
+  
+  // Get position relative to the visible image
+  const rect = annotationsRef.current.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+  
+  // Convert to coordinates relative to natural image dimensions
+  const relativeX = (x / imageRect.width) * naturalWidth;
+  const relativeY = (y / imageRect.height) * naturalHeight;
+  
+  return {
+    x: Math.max(0, Math.min(naturalWidth, relativeX)),
+    y: Math.max(0, Math.min(naturalHeight, relativeY))
   };
+};
 
   // Update handleImageDoubleClick
   const handleImageDoubleClick = (e) => {
@@ -342,19 +334,29 @@ const ImageAnnotator = () => {
     setSelectedAnnotation(null);
   };
 
-  const generateExportableHtml = () => {
-    const allPages = images.map((image, index) => {
-      const imageAnnotations = annotations[image.id] || [];
-      return `
-        <div class="page-container ${index > 0 ? 'mt-8 pt-8 border-t' : ''}">
-          <h2 class="text-lg mb-4">Page ${index + 1}</h2>
-          <div class="image-container">
-            <div class="image-wrapper">
-              <img src="${image.src}" alt="Page ${index + 1}" class="main-image">
-              <div class="annotations-layer">
-                ${imageAnnotations.map(ann => `
+  // Update generateExportableHtml to use absolute positioning
+const generateExportableHtml = () => {
+  const allPages = images.map((image, index) => {
+    const imageAnnotations = annotations[image.id] || [];
+    return `
+      <div class="page-container ${index > 0 ? 'mt-8 pt-8 border-t' : ''}">
+        <h2 class="text-lg mb-4">Page ${index + 1}</h2>
+        <div class="image-container">
+          <div class="image-wrapper">
+            <img 
+              src="${image.src}" 
+              alt="Page ${index + 1}" 
+              class="main-image"
+              data-natural-width="${image.width}"
+              data-natural-height="${image.height}"
+            />
+            <div class="annotations-layer">
+              ${imageAnnotations.map(ann => {
+                const xPercent = (ann.x / image.width) * 100;
+                const yPercent = (ann.y / image.height) * 100;
+                return `
                   <div class="annotation-wrapper">
-                    <div class="annotation" style="left: ${ann.x}%; top: ${ann.y}%">
+                    <div class="annotation" style="left: ${xPercent}%; top: ${yPercent}%">
                       <button 
                         class="marker ${ann.completed ? 'complete' : 'incomplete'}"
                         onclick="togglePopup('${ann.id}')"
@@ -373,276 +375,277 @@ const ImageAnnotator = () => {
                       </div>
                     </div>
                   </div>
-                `).join('')}
-              </div>
+                `;
+              }).join('')}
             </div>
           </div>
         </div>
-      `;
-    }).join('');
-  
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>PLSFIX-THX Annotation</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          * {
-            -webkit-tap-highlight-color: transparent;
-          }
-          
-          .popup-backdrop {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-          }
-          
-          .image-container { 
-            position: relative;
-            width: 100%;
-            max-width: 100vw;
-            margin: 0 auto;
-            background: #f8f9fa;
-            border-radius: 4px;
-            overflow: visible;
-          }
-          
-          .image-wrapper {
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
-          
-          .main-image {
-            display: block;
-            max-width: 100%;
-            height: auto;
-            position: relative;
-            z-index: 1;
-          }
-  
-          .annotations-layer {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-            pointer-events: none;
-          }
-  
-          .annotation-wrapper {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-          }
-          
-          .annotation { 
-            position: absolute;
-            transform: translate(-50%, -50%);
-            z-index: 2;
-            pointer-events: auto;
-          }
-          
-          .marker { 
-            width: clamp(24px, 6vmin, 32px);
-            height: clamp(24px, 6vmin, 32px);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: white;
-            border: 2px solid white;
-            font-size: clamp(14px, 3vmin, 16px);
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            background-color: #3b82f6;
-            position: relative;
-            z-index: 3;
-          }
-          
-          .marker.complete { 
-            background-color: #22c55e;
-          }
-          
-          .popup { 
-            display: none;
-            position: absolute;
-            background: white;
-            padding: 16px;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            z-index: 1000;
-            width: 280px;
-            border: 1px solid #e5e7eb;
-            top: 130%;
-            left: 50%;
-            transform: translateX(-50%);
-          }
-  
-          .note-text {
-            margin-bottom: 16px;
-            font-size: 14px;
-            color: #374151;
-            word-break: break-word;
-          }
-  
-          .button-container {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-          }
-  
-          .action-button {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            background: white;
-            color: #374151;
-            font-size: 14px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 36px;
-          }
-  
-          .action-button:hover {
-            background: #f9fafb;
-          }
-  
-          @media (max-width: 767px) {
-            .popup {
-              position: fixed;
-              bottom: 20px;
-              top: auto;
-              left: 50%;
-              width: calc(100% - 32px);
-              max-width: 320px;
-            }
-          }
-        </style>
-      </head>
-      <body>
-      <div class="container">
-        ${allPages}
-      <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 14px;">
-            Created with 
-            <a 
-              href="https://plsfixnow.vercel.app" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style="color: #3b82f6; text-decoration: none;"
-            >
-              PLSFIX-THX
-            </a>
-             by 
-            <a 
-              href="https://www.linkedin.com/in/michael-arthur" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style="color: #3b82f6; text-decoration: none;"
-            >
-              Michael Arthur
-            </a>
-          </p>
-        </footer>
       </div>
-      <script>
-          function togglePopup(id) {
-            const popup = document.getElementById('popup-' + id);
-            const allPopups = document.querySelectorAll('.popup');
-            const isMobile = window.innerWidth < 768;
-            const marker = document.querySelector(\`[data-id="\${id}"]\`);
-            
-            // Close all other popups
-            allPopups.forEach(p => {
-              if (p !== popup) {
-                p.style.display = 'none';
-              }
-            });
-  
-            // Toggle current popup
-            if (popup.style.display === 'block') {
-              popup.style.display = 'none';
-              marker.classList.remove('active');
-            } else {
-              popup.style.display = 'block';
-              marker.classList.add('active');
-              
-              if (isMobile) {
-                // On mobile, position popup at the bottom of the screen
-                popup.style.position = 'fixed';
-                popup.style.bottom = '20px';
-                popup.style.left = '50%';
-                popup.style.transform = 'translateX(-50%)';
-                popup.style.top = 'auto';
-                popup.style.width = 'calc(100% - 32px)';
-                popup.style.maxWidth = '320px';
-                
-                // Add backdrop on mobile
-                let backdrop = document.querySelector('.popup-backdrop');
-                if (!backdrop) {
-                  backdrop = document.createElement('div');
-                  backdrop.className = 'popup-backdrop';
-                  document.body.appendChild(backdrop);
-                }
-                backdrop.style.display = 'block';
-              }
-            }
-          }
-  
-          function toggleComplete(id) {
-            const marker = document.querySelector(\`[data-id="\${id}"]\`);
-            const popup = document.getElementById('popup-' + id);
-            const button = popup.querySelector('.action-button');
-            
-            marker.classList.toggle('complete');
-            marker.classList.toggle('incomplete');
-            marker.innerHTML = marker.classList.contains('complete') ? '✓' : '!';
-            button.textContent = marker.classList.contains('complete') ? 'Undo' : 'Complete';
-          }
-  
-          // Close popups when clicking outside
-          document.addEventListener('click', (e) => {
-            if (!e.target.closest('.annotation')) {
-              closeAllPopups();
-            }
-          });
-          
-          document.addEventListener('touchend', (e) => {
-            if (e.target.classList.contains('popup-backdrop')) {
-              closeAllPopups();
-            }
-          });
-          
-          function closeAllPopups() {
-            document.querySelectorAll('.popup').forEach(popup => {
-              popup.style.display = 'none';
-            });
-            document.querySelectorAll('.marker').forEach(marker => {
-              marker.classList.remove('active');
-            });
-            const backdrop = document.querySelector('.popup-backdrop');
-            if (backdrop) {
-              backdrop.style.display = 'none';
-            }
-          }
-        </script>
-      </body>
-      </html>
     `;
-    return html;
-  };
+  }).join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>PLSFIX-THX Annotation</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        * {
+          -webkit-tap-highlight-color: transparent;
+        }
+        
+        .popup-backdrop {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 999;
+        }
+        
+        .image-container { 
+          position: relative;
+          width: 100%;
+          max-width: 100vw;
+          margin: 0 auto;
+          background: #f8f9fa;
+          border-radius: 4px;
+          overflow: visible;
+        }
+        
+        .image-wrapper {
+          position: relative;
+          width: fit-content;
+          margin: 0 auto;
+        }
+        
+        .main-image {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          margin: 0 auto;
+        }
+
+        .annotations-layer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+
+        .annotation-wrapper {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+        }
+        
+        .annotation { 
+          position: absolute;
+          transform: translate(-50%, -50%);
+          pointer-events: auto;
+        }
+        
+        .marker { 
+          width: clamp(24px, 6vmin, 32px);
+          height: clamp(24px, 6vmin, 32px);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: white;
+          border: 2px solid white;
+          font-size: clamp(14px, 3vmin, 16px);
+          font-weight: bold;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          background-color: #3b82f6;
+          position: relative;
+          z-index: 3;
+        }
+        
+        .marker.complete { 
+          background-color: #22c55e;
+        }
+        
+        .popup { 
+          display: none;
+          position: absolute;
+          background: white;
+          padding: 16px;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          z-index: 1000;
+          width: 280px;
+          border: 1px solid #e5e7eb;
+          top: 130%;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+
+        .note-text {
+          margin-bottom: 16px;
+          font-size: 14px;
+          color: #374151;
+          word-break: break-word;
+        }
+
+        .button-container {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .action-button {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          background: white;
+          color: #374151;
+          font-size: 14px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 36px;
+        }
+
+        .action-button:hover {
+          background: #f9fafb;
+        }
+
+        @media (max-width: 767px) {
+          .popup {
+            position: fixed;
+            bottom: 20px;
+            top: auto;
+            left: 50%;
+            width: calc(100% - 32px);
+            max-width: 320px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+    <div class="container">
+      ${allPages}
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e5e7eb;">
+        <p style="color: #6b7280; font-size: 14px;">
+          Created with 
+          <a 
+            href="https://plsfixnow.vercel.app" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style="color: #3b82f6; text-decoration: none;"
+          >
+            PLSFIX-THX
+          </a>
+           by 
+          <a 
+            href="https://www.linkedin.com/in/michael-arthur" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style="color: #3b82f6; text-decoration: none;"
+          >
+            Michael Arthur
+          </a>
+        </p>
+      </footer>
+    </div>
+    <script>
+        function togglePopup(id) {
+          const popup = document.getElementById('popup-' + id);
+          const allPopups = document.querySelectorAll('.popup');
+          const isMobile = window.innerWidth < 768;
+          const marker = document.querySelector(\`[data-id="\${id}"]\`);
+          
+          // Close all other popups
+          allPopups.forEach(p => {
+            if (p !== popup) {
+              p.style.display = 'none';
+            }
+          });
+
+          // Toggle current popup
+          if (popup.style.display === 'block') {
+            popup.style.display = 'none';
+            marker.classList.remove('active');
+          } else {
+            popup.style.display = 'block';
+            marker.classList.add('active');
+            
+            if (isMobile) {
+              // On mobile, position popup at the bottom of the screen
+              popup.style.position = 'fixed';
+              popup.style.bottom = '20px';
+              popup.style.left = '50%';
+              popup.style.transform = 'translateX(-50%)';
+              popup.style.top = 'auto';
+              popup.style.width = 'calc(100% - 32px)';
+              popup.style.maxWidth = '320px';
+              
+              // Add backdrop on mobile
+              let backdrop = document.querySelector('.popup-backdrop');
+              if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.className = 'popup-backdrop';
+                document.body.appendChild(backdrop);
+              }
+              backdrop.style.display = 'block';
+            }
+          }
+        }
+
+        function toggleComplete(id) {
+          const marker = document.querySelector(\`[data-id="\${id}"]\`);
+          const popup = document.getElementById('popup-' + id);
+          const button = popup.querySelector('.action-button');
+          
+          marker.classList.toggle('complete');
+          marker.classList.toggle('incomplete');
+          marker.innerHTML = marker.classList.contains('complete') ? '✓' : '!';
+          button.textContent = marker.classList.contains('complete') ? 'Undo' : 'Complete';
+        }
+
+        // Close popups when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.annotation')) {
+            closeAllPopups();
+          }
+        });
+        
+        document.addEventListener('touchend', (e) => {
+          if (e.target.classList.contains('popup-backdrop')) {
+            closeAllPopups();
+          }
+        });
+        
+        function closeAllPopups() {
+          document.querySelectorAll('.popup').forEach(popup => {
+            popup.style.display = 'none';
+          });
+          document.querySelectorAll('.marker').forEach(marker => {
+            marker.classList.remove('active');
+          });
+          const backdrop = document.querySelector('.popup-backdrop');
+          if (backdrop) {
+            backdrop.style.display = 'none';
+          }
+        }
+      </script>
+    </body>
+    </html>
+  `;
+  return html;
+};
 
   const handleExportClick = (type) => {
     setShowExportDialog({ visible: true, type });
@@ -683,20 +686,23 @@ const handleExportPNG = async (filename) => {
   container.style.position = 'absolute';
   container.style.left = '-9999px';
   container.style.top = '-9999px';
+  container.style.width = '1200px'; // Fixed width for consistent rendering
   document.body.appendChild(container);
 
   try {
     const pdf = new jsPDF({
       orientation: 'portrait',
-      unit: 'px'
+      unit: 'px',
+      format: 'a4',
+      hotfixes: ['px_scaling'] // Enable px scaling hotfix
     });
     
     for (let i = 0; i < images.length; i++) {
       const imageContainer = document.createElement('div');
       imageContainer.style.position = 'relative';
-      imageContainer.style.display = 'inline-block';
+      imageContainer.style.width = '100%';
+      imageContainer.style.backgroundColor = 'white';
       imageContainer.style.padding = '20px';
-      imageContainer.style.maxWidth = '1200px'; // Limit max width for consistency
       
       container.innerHTML = '';
       container.appendChild(imageContainer);
@@ -704,27 +710,41 @@ const handleExportPNG = async (filename) => {
       // Add page header
       const header = document.createElement('h2');
       header.style.fontSize = '24px';
-      header.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      header.style.fontWeight = '600';
-      header.style.color = '#111827';
       header.style.marginBottom = '16px';
       header.textContent = `Page ${i + 1}`;
       imageContainer.appendChild(header);
 
+      // Create image wrapper for consistent positioning
+      const imgWrapper = document.createElement('div');
+      imgWrapper.style.position = 'relative';
+      imgWrapper.style.width = '100%';
+      imgWrapper.style.display = 'flex';
+      imgWrapper.style.justifyContent = 'center';
+      
       const imgElement = document.createElement('img');
       imgElement.src = images[i].src;
       imgElement.style.maxWidth = '100%';
+      imgElement.style.height = 'auto';
       imgElement.style.display = 'block';
       
       await new Promise((resolve) => {
         imgElement.onload = resolve;
       });
       
-      imageContainer.appendChild(imgElement);
+      imgWrapper.appendChild(imgElement);
+      imageContainer.appendChild(imgWrapper);
 
-      // Fix annotation creation with consistent sizes
+      // Create annotations container with fixed positioning
+      const annotationsContainer = document.createElement('div');
+      annotationsContainer.style.position = 'absolute';
+      annotationsContainer.style.top = '0';
+      annotationsContainer.style.left = '0';
+      annotationsContainer.style.width = '100%';
+      annotationsContainer.style.height = '100%';
+      imgWrapper.appendChild(annotationsContainer);
+
       const imageAnnotations = annotations[images[i].id] || [];
-      for (const ann of imageAnnotations) {
+      imageAnnotations.forEach(ann => {
         const marker = document.createElement('div');
         marker.style.position = 'absolute';
         marker.style.left = `${ann.x}%`;
@@ -737,57 +757,44 @@ const handleExportPNG = async (filename) => {
         button.style.borderRadius = '50%';
         button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
         button.style.color = 'white';
-        button.style.display = 'flex';
-        button.style.alignItems = 'center';
-        button.style.justifyContent = 'center';
         button.style.border = '2px solid white';
         button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-        button.style.fontSize = '20px';
+        button.style.fontSize = '16px';
         button.style.fontWeight = 'bold';
-        button.style.lineHeight = '1';
-        button.style.padding = '0';
-        button.style.cursor = 'pointer';
         button.innerHTML = ann.completed ? '✓' : '!';
 
         marker.appendChild(button);
-
-        // Add note text with consistent sizing
+        
+        // Position note text more reliably
         const note = document.createElement('div');
         note.style.position = 'absolute';
         note.style.backgroundColor = 'white';
-        note.style.padding = '12px 16px';
-        note.style.borderRadius = '8px';
-        note.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-        note.style.top = '130%';
+        note.style.padding = '8px 12px';
+        note.style.borderRadius = '6px';
+        note.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        note.style.top = '120%';
         note.style.left = '50%';
         note.style.transform = 'translateX(-50%)';
-        note.style.width = '240px'; // Fixed width
-        note.style.color = '#374151';
+        note.style.width = '200px';
+        note.style.fontSize = '12px';
         note.style.border = '1px solid #e5e7eb';
-        note.style.zIndex = '1000';
-        note.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-        note.style.fontSize = '14px'; // Consistent font size
-        note.style.fontWeight = '400';
-        note.style.lineHeight = '1.4';
         note.textContent = ann.note;
         
         marker.appendChild(note);
-        imageContainer.appendChild(marker);
-      }
+        annotationsContainer.appendChild(marker);
+      });
 
-      // Update footer styling
+      // Add footer
       const footer = document.createElement('div');
       footer.style.textAlign = 'center';
       footer.style.padding = '16px';
-      footer.style.marginTop = '24px';
+      footer.style.marginTop = '20px';
       footer.style.borderTop = '1px solid #e5e7eb';
-      footer.style.color = '#6b7280';
       footer.style.fontSize = '12px';
-      footer.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      footer.innerHTML = `Created with plsfixnow.vercel.app`;
-
+      footer.innerHTML = 'Created with plsfixnow.vercel.app';
       imageContainer.appendChild(footer);
 
+      // Wait for rendering
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(imageContainer, {
@@ -796,6 +803,7 @@ const handleExportPNG = async (filename) => {
         logging: false,
         useCORS: true,
         allowTaint: true,
+        windowWidth: 1200,
         imageTimeout: 0,
       });
 
@@ -803,27 +811,37 @@ const handleExportPNG = async (filename) => {
         pdf.addPage();
       }
 
+      // Calculate dimensions to fit page while maintaining aspect ratio
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imageWidth = canvas.width;
-      const imageHeight = canvas.height;
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
       
-      let finalWidth = pageWidth;
-      let finalHeight = (imageHeight * pageWidth) / imageWidth;
-
-      if (finalHeight > pageHeight) {
-        finalHeight = pageHeight;
-        finalWidth = (imageWidth * pageHeight) / imageHeight;
-      }
-
+      const ratio = Math.min(
+        (pageWidth - 40) / imgWidth,
+        (pageHeight - 40) / imgHeight
+      );
+      
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      
+      // Center image on page
       const x = (pageWidth - finalWidth) / 2;
       const y = (pageHeight - finalHeight) / 2;
 
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, finalWidth, finalHeight);
+      pdf.addImage(
+        canvas.toDataURL('image/png'),
+        'PNG',
+        x,
+        y,
+        finalWidth,
+        finalHeight,
+        undefined,
+        'FAST'
+      );
     }
 
     pdf.save(`${filename}.pdf`);
-
   } finally {
     document.body.removeChild(container);
   }
@@ -1017,70 +1035,80 @@ const handleExportPNG = async (filename) => {
                         onMouseUp={() => setDraggedAnnotation(null)}
                         onTouchEnd={() => setDraggedAnnotation(null)}
                       >
-                        {currentAnnotations.map((annotation) => (
-                          <div
-                            key={annotation.id}
-                            className="absolute"
-                            style={{
-                              left: `${annotation.x}%`,
-                              top: `${annotation.y}%`,
-                              transform: 'translate(-50%, -50%)',
-                              cursor: draggedAnnotation?.id === annotation.id ? 'grabbing' : 'grab',
-                              pointerEvents: 'auto',
-                              zIndex: draggedAnnotation?.id === annotation.id ? 1000 : 1
-                            }}
-                          >
-                            <button
-                              onMouseDown={(e) => handleDragStart(annotation, e)}
-                              onTouchStart={(e) => handleDragStart(annotation, e)}
-                              onClick={(e) => !draggedAnnotation && toggleAnnotation(annotation, e)}
-                              className={`w-8 h-8 md:w-6 md:h-6 rounded-full flex items-center justify-center ${
-                                annotation.completed ? 'bg-green-500' : 'bg-blue-500'
-                              } text-white hover:opacity-90 transition-opacity`}
-                            >
-                              {annotation.completed ? (
-                                <Check className="w-5 h-5 md:w-4 md:h-4" />
-                              ) : (
-                                <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
-                              )}
-                            </button>
+                        {currentAnnotations.map((annotation) => {
+  const imageWidth = imageRef.current?.naturalWidth || 0;
+  const imageHeight = imageRef.current?.naturalHeight || 0;
+  
+  // Convert absolute coordinates to percentages
+  const xPercent = (annotation.x / imageWidth) * 100;
+  const yPercent = (annotation.y / imageHeight) * 100;
+  
+  return (
+    <div
+      key={annotation.id}
+      className="absolute"
+      style={{
+        left: `${xPercent}%`,
+        top: `${yPercent}%`,
+        transform: 'translate(-50%, -50%)',
+        cursor: draggedAnnotation?.id === annotation.id ? 'grabbing' : 'grab',
+        pointerEvents: 'auto',
+        zIndex: draggedAnnotation?.id === annotation.id ? 1000 : 1
+      }}
+    >
+      <button
+        onMouseDown={(e) => handleDragStart(annotation, e)}
+        onTouchStart={(e) => handleDragStart(annotation, e)}
+        onClick={(e) => !draggedAnnotation && toggleAnnotation(annotation, e)}
+        className={`w-8 h-8 md:w-6 md:h-6 rounded-full flex items-center justify-center ${
+          annotation.completed ? 'bg-green-500' : 'bg-blue-500'
+        } text-white hover:opacity-90 transition-opacity`}
+      >
+        {annotation.completed ? (
+          <Check className="w-5 h-5 md:w-4 md:h-4" />
+        ) : (
+          <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
+        )}
+      </button>
 
-                            {selectedAnnotation?.id === annotation.id && (
-                              <div
-                                ref={popupRef}
-                                className="absolute z-10 bg-white p-4 rounded-lg shadow-lg w-64 md:w-72"
-                                style={{
-                                  top: '130%',
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  border: '1px solid #e5e7eb',
-                                }}
-                              >
-                                <p className="mb-4 text-sm text-gray-700 break-words">{annotation.note}</p>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={(e) => toggleCompletion(annotation.id, e)}
-                                    className="flex-1 h-9 text-sm"
-                                  >
-                                    <Check className="w-4 h-4 mr-1" />
-                                    {annotation.completed ? 'Undo' : 'Complete'}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={(e) => deleteAnnotation(annotation.id, e)}
-                                    className="flex-1 h-9 text-sm"
-                                  >
-                                    <X className="w-4 h-4 mr-1" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+      {selectedAnnotation?.id === annotation.id && (
+        <div
+          ref={popupRef}
+          className="absolute z-10 bg-white p-4 rounded-lg shadow-lg w-64 md:w-72"
+          style={{
+            top: '130%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            border: '1px solid #e5e7eb',
+          }}
+        >
+          <p className="mb-4 text-sm text-gray-700 break-words">{annotation.note}</p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => toggleCompletion(annotation.id, e)}
+              className="flex-1 h-9 text-sm"
+            >
+              <Check className="w-4 h-4 mr-1" />
+              {annotation.completed ? 'Undo' : 'Complete'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => deleteAnnotation(annotation.id, e)}
+              className="flex-1 h-9 text-sm"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+})}
+
                       </div>
                     </div>
                   </div>
