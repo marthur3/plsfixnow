@@ -12,7 +12,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShar
           <X className="w-4 h-4" />
         </button>
         
-        <h2 className="text-xl font-semibold mb-4">Share or Export</h2>
+        <h2 className="text-xl font-semibold mb-4">Export Options</h2>
         
         {/* Mobile Share Button */}
         {canShare && (
@@ -22,7 +22,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShar
             variant="outline"
           >
             <Share2 className="w-4 h-4" />
-            Share
+            Share via System Dialog
           </Button>
         )}
 
@@ -33,39 +33,42 @@ const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShar
           variant="outline"
         >
           <Copy className="w-4 h-4" />
-          Copy to Clipboard
+          Copy Image to Clipboard
         </Button>
 
         {/* Export Form */}
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label htmlFor="filename" className="block text-sm font-medium text-gray-700 mb-1">
-              Download as File
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Export Format
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <input
                 type="text"
                 id="filename"
                 name="filename"
                 defaultValue={defaultName}
                 required
-                className="flex-1 px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border rounded-lg"
                 placeholder="Enter filename"
               />
               <select
                 name="format"
-                className="px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border rounded-lg"
                 defaultValue="pdf"
               >
-                <option value="pdf">PDF</option>
-                <option value="html">HTML</option>
+                <option value="pdf">PDF Document (with annotations)</option>
+                <option value="html">HTML (interactive)</option>
               </select>
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="submit" className="gap-2">
-              <Download className="w-4 h-4" />
-              Download
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              <Download className="w-4 h-4 mr-2" />
+              Export
             </Button>
           </div>
         </form>

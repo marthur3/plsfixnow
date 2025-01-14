@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon, Plus } from 'lucide-react';
+import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon, Plus, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Instructions from './Instructions';
 import html2canvas from 'html2canvas';
@@ -391,7 +391,7 @@ const getRelativeCoordinates = (clientX, clientY) => {
     setAnnotations(prev => ({
       ...prev,
       [currentImageId]: prev[currentImageId].map(ann =>
-        ann.id === id ? { ...ann, completed: !ann.completed } : ann
+        ann.id === id ? { ...ann.completed, completed: !ann.completed } : ann
       )
     }));
   };
@@ -728,24 +728,31 @@ const generateExportableHtml = () => {
 const handleExportSubmit = async (e) => {
   e.preventDefault();
   const filename = e.target.filename.value.trim();
+  const format = e.target.format.value;
   
-  if (showExportDialog.type === 'html') {
-    const html = generateExportableHtml();
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } else if (showExportDialog.type === 'png') {
-    handleExportPNG(filename);
+  try {
+    if (format === 'html') {
+      const html = generateExportableHtml();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if (format === 'pdf') {
+      await handleExportPNG(filename);
+    }
+    
+    setShowExportDialog({ visible: false });
+  } catch (error) {
+    console.error('Export failed:', error);
+    alert('Export failed. Please try again.');
   }
-  
-  setShowExportDialog({ visible: false, type: null });
 };
+
 // The PNG export is only exporting one page even though images.length > 1
 // Need to fix handleExportPNG to properly handle multiple pages while keeping existing styling
 // Current issue: container.innerHTML = '' might be clearing too early
@@ -985,6 +992,128 @@ const handleExportPNG = async (filename) => {
   }
 };
 
+// Add generatePDF function before handleExportPNG
+const generatePDF = async () => {
+  try {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: 'a4',
+      hotfixes: ['px_scaling']
+    });
+
+    for (let i = 0; i < images.length; i++) {
+      // Create temporary container for rendering
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '1200px';
+      document.body.appendChild(container);
+
+      // Render content
+      const content = document.createElement('div');
+      content.style.padding = '20px';
+      content.style.backgroundColor = 'white';
+      container.appendChild(content);
+
+      // Add image
+      const img = new Image();
+      img.src = images[i].src;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+      
+      const imgWrapper = document.createElement('div');
+      imgWrapper.style.position = 'relative';
+      imgWrapper.appendChild(img);
+      content.appendChild(imgWrapper);
+
+      // Add annotations
+      const imageAnnotations = annotations[images[i].id] || [];
+      const annotationsLayer = document.createElement('div');
+      annotationsLayer.style.position = 'absolute';
+      annotationsLayer.style.top = '0';
+      annotationsLayer.style.left = '0';
+      annotationsLayer.style.width = '100%';
+      annotationsLayer.style.height = '100%';
+      imgWrapper.appendChild(annotationsLayer);
+
+      imageAnnotations.forEach(ann => {
+        const marker = document.createElement('div');
+        marker.style.position = 'absolute';
+        marker.style.left = `${(ann.x / img.naturalWidth) * 100}%`;
+        marker.style.top = `${(ann.y / img.naturalHeight) * 100}%`;
+        marker.style.transform = 'translate(-50%, -50%)';
+        
+        const dot = document.createElement('div');
+        dot.style.width = '24px';
+        dot.style.height = '24px';
+        dot.style.borderRadius = '50%';
+        dot.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
+        dot.style.color = 'white';
+        dot.style.display = 'flex';
+        dot.style.alignItems = 'center';
+        dot.style.justifyContent = 'center';
+        dot.style.fontSize = '14px';
+        dot.style.border = '2px solid white';
+        dot.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        dot.innerHTML = ann.completed ? '✓' : '!';
+        
+        marker.appendChild(dot);
+        annotationsLayer.appendChild(marker);
+      });
+
+      // Capture the page
+      const canvas = await html2canvas(container, {
+        backgroundColor: 'white',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+
+      // Add to PDF
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      const ratio = Math.min(
+        (pageWidth - 40) / imgWidth,
+        (pageHeight - 40) / imgHeight
+      );
+      
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      
+      const x = (pageWidth - finalWidth) / 2;
+      const y = (pageHeight - finalHeight) / 2;
+
+      pdf.addImage(
+        canvas.toDataURL('image/png'),
+        'PNG',
+        x,
+        y,
+        finalWidth,
+        finalHeight
+      );
+
+      // Clean up
+      document.body.removeChild(container);
+    }
+
+    // Return blob for sharing
+    return pdf.output('blob');
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    throw error;
+  }
+};
+
   const currentAnnotations = images[currentImageIndex]
     ? annotations[images[currentImageIndex].id] || []
     : [];
@@ -1024,24 +1153,120 @@ const handleExportPNG = async (filename) => {
     setShowExportDialog({ visible: false });
   };
 
-  // Add clipboard handler
-  const handleCopyToClipboard = async () => {
-    try {
-      const blob = await generatePDF();
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'application/pdf': blob
-        })
-      ]);
-      setClipboardFeedback('Copied to clipboard!');
-      setTimeout(() => setClipboardFeedback(null), 2000);
-    } catch (error) {
-      console.error('Copy failed:', error);
-      setClipboardFeedback('Copy failed');
-      setTimeout(() => setClipboardFeedback(null), 2000);
-    }
-    setShowExportDialog({ visible: false });
-  };
+// Replace handleCopyToClipboard with this version
+const handleCopyToClipboard = async () => {
+  try {
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.width = '1200px';
+    container.style.backgroundColor = 'white';
+    document.body.appendChild(container);
+
+    // Add current image and its annotations
+    const content = document.createElement('div');
+    content.style.position = 'relative';
+    content.style.width = '100%';
+    content.style.padding = '20px';
+    container.appendChild(content);
+
+    const img = new Image();
+    img.src = images[currentImageIndex].src;
+    await new Promise((resolve) => {
+      img.onload = resolve;
+    });
+
+    const imgWrapper = document.createElement('div');
+    imgWrapper.style.position = 'relative';
+    imgWrapper.appendChild(img);
+    content.appendChild(imgWrapper);
+
+    // Add annotations
+    const imageAnnotations = annotations[images[currentImageIndex].id] || [];
+    const annotationsLayer = document.createElement('div');
+    annotationsLayer.style.position = 'absolute';
+    annotationsLayer.style.top = '0';
+    annotationsLayer.style.left = '0';
+    annotationsLayer.style.width = '100%';
+    annotationsLayer.style.height = '100%';
+    imgWrapper.appendChild(annotationsLayer);
+
+    imageAnnotations.forEach(ann => {
+      const marker = document.createElement('div');
+      marker.style.position = 'absolute';
+      marker.style.left = `${(ann.x / img.naturalWidth) * 100}%`;
+      marker.style.top = `${(ann.y / img.naturalHeight) * 100}%`;
+      marker.style.transform = 'translate(-50%, -50%)';
+      
+      const dot = document.createElement('div');
+      dot.style.width = '24px';
+      dot.style.height = '24px';
+      dot.style.borderRadius = '50%';
+      dot.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
+      dot.style.color = 'white';
+      dot.style.display = 'flex';
+      dot.style.alignItems = 'center';
+      dot.style.justifyContent = 'center';
+      dot.style.fontSize = '14px';
+      dot.style.border = '2px solid white';
+      dot.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      dot.innerHTML = ann.completed ? '✓' : '!';
+      
+      marker.appendChild(dot);
+      
+      // Add note text
+      const note = document.createElement('div');
+      note.style.position = 'absolute';
+      note.style.top = '100%';
+      note.style.left = '50%';
+      note.style.transform = 'translateX(-50%)';
+      note.style.backgroundColor = 'white';
+      note.style.padding = '4px 8px';
+      note.style.borderRadius = '4px';
+      note.style.fontSize = '12px';
+      note.style.whiteSpace = 'normal';
+      note.style.maxWidth = '200px';
+      note.style.textAlign = 'center';
+      note.style.marginTop = '4px';
+      note.style.border = '1px solid #e5e7eb';
+      note.style.zIndex = '11';
+      note.textContent = ann.note;
+      
+      marker.appendChild(note);
+      annotationsLayer.appendChild(marker);
+    });
+
+    // Capture as canvas
+    const canvas = await html2canvas(container, {
+      backgroundColor: 'white',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true
+    });
+
+    // Convert to blob
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    
+    // Create clipboard item
+    const clipboardItem = new ClipboardItem({
+      'image/png': blob
+    });
+    
+    // Copy to clipboard
+    await navigator.clipboard.write([clipboardItem]);
+    
+    // Clean up
+    document.body.removeChild(container);
+    
+    setClipboardFeedback('Copied to clipboard!');
+    setTimeout(() => setClipboardFeedback(null), 2000);
+  } catch (error) {
+    console.error('Copy failed:', error);
+    setClipboardFeedback('Copy failed');
+    setTimeout(() => setClipboardFeedback(null), 2000);
+  }
+  setShowExportDialog({ visible: false });
+};
 
   // Update the backdrop click handler
   const handleBackdropClick = (e) => {
@@ -1051,6 +1276,30 @@ const handleExportPNG = async (filename) => {
       setNoteText('');
     }
   };
+
+  // Update toolbar buttons
+const exportButtons = (
+  <div className="flex items-center justify-end gap-2">
+    <Button
+      onClick={() => handleExportClick('export')}
+      variant="outline"
+      className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
+    >
+      <Download className="w-4 h-4" />
+      <span className="hidden md:inline">Export</span>
+      <span className="md:hidden">Export</span>
+    </Button>
+    <Button
+      onClick={handleCopyToClipboard}
+      variant="outline"
+      className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
+    >
+      <Copy className="w-4 h-4" />
+      <span className="hidden md:inline">Copy</span>
+      <span className="md:hidden">Copy</span>
+    </Button>
+  </div>
+);
 
   return (
     <div className="relative">
@@ -1183,24 +1432,7 @@ const handleExportPNG = async (filename) => {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2">
-                  <Button
-                    onClick={() => handleExportClick('html')}
-                    variant="outline"
-                    className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span className="hidden md:inline">Export HTML</span>
-                    <span className="md:hidden">HTML</span>
-                  </Button>
-                  <Button
-                    onClick={() => handleExportClick('png')}
-                    variant="outline"
-                    className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                    <span className="hidden md:inline">Export PDF</span>
-                    <span className="md:hidden">PDF</span>
-                  </Button>
+                  {exportButtons}
                 </div>
               </div>
 
