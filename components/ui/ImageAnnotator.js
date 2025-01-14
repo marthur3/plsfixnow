@@ -220,14 +220,16 @@ const ImageAnnotator = () => {
     }
   };
 
-  const handleTouchMove = () => {
+  const handleTouchMove = (e) => {
     setTouchMoved(true);
+    handleDrag(e);
   };
 
   const handleTouchEnd = (e) => {
-    if (!touchMoved && isMobile) {
-      // On mobile, show the note input directly on single tap
-      // if the tap isn't part of a drag operation
+    const touchDuration = Date.now() - touchStartTime;
+    
+    if (!touchMoved && touchDuration < 500) {
+      // This was a tap, not a drag
       e.preventDefault();
       setNoteInput({
         visible: true,
@@ -240,6 +242,8 @@ const ImageAnnotator = () => {
         if (input) input.focus();
       }, 100);
     }
+    
+    handleDragEnd(e);
   };
 
   // Updated coordinate calculation helper
@@ -287,23 +291,27 @@ const getRelativeCoordinates = (clientX, clientY) => {
   };
 
   const handleNoteSubmit = (e) => {
-    e?.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
     
-    if (noteText.trim() && images[currentImageIndex]) {
-      const currentImageId = images[currentImageIndex].id;
-      const newAnnotation = {
-        id: Date.now(),
-        x: noteInput.x,
-        y: noteInput.y,
-        note: noteText,
-        completed: false
-      };
-      
-      setAnnotations(prev => ({
-        ...prev,
-        [currentImageId]: [...(prev[currentImageId] || []), newAnnotation]
-      }));
+    if (!noteText.trim() || !images[currentImageIndex]) {
+      setNoteInput({ visible: false, x: 0, y: 0 });
+      setNoteText('');
+      return;
     }
+    
+    const currentImageId = images[currentImageIndex].id;
+    const newAnnotation = {
+      id: Date.now(),
+      x: noteInput.x,
+      y: noteInput.y,
+      note: noteText,
+      completed: false
+    };
+    
+    setAnnotations(prev => ({
+      ...prev,
+      [currentImageId]: [...(prev[currentImageId] || []), newAnnotation]
+    }));
 
     setNoteInput({ visible: false, x: 0, y: 0 });
     setNoteText('');
@@ -313,6 +321,11 @@ const getRelativeCoordinates = (clientX, clientY) => {
   const handleDragStart = (annotation, e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isMobile) {
+      // On mobile, add a visual indicator that the annotation is being dragged
+      e.target.style.opacity = '0.7';
+      e.target.style.transform = 'scale(1.1)';
+    }
     setDraggedAnnotation(annotation);
     setSelectedAnnotation(null);
   };
@@ -325,6 +338,11 @@ const getRelativeCoordinates = (clientX, clientY) => {
     const clientY = e.clientY || (e.touches && e.touches[0].clientY);
     
     if (!clientX || !clientY) return;
+
+    // Add some delay for mobile to distinguish between tap and drag
+    if (isMobile && !touchMoved) {
+      return;
+    }
 
     const { x, y } = getRelativeCoordinates(clientX, clientY);
     
@@ -339,7 +357,12 @@ const getRelativeCoordinates = (clientX, clientY) => {
     }));
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e) => {
+    if (isMobile && e.target) {
+      // Reset the visual indicators
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'none';
+    }
     setDraggedAnnotation(null);
   };
 
@@ -1192,16 +1215,26 @@ const handleExportPNG = async (filename) => {
         onMouseDown={(e) => handleDragStart(annotation, e)}
         onTouchStart={(e) => handleDragStart(annotation, e)}
         onClick={(e) => !draggedAnnotation && toggleAnnotation(annotation, e)}
-        className={`w-8 h-8 md:w-6 md:h-6 rounded-full flex items-center justify-center ${
-          annotation.completed ? 'bg-green-500' : 'bg-blue-500'
-        } text-white hover:opacity-90 transition-opacity`}
-      >
-        {annotation.completed ? (
-          <Check className="w-5 h-5 md:w-4 md:h-4" />
-        ) : (
-          <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
-        )}
-      </button>
+        className={`
+        w-10 h-10 md:w-6 md:h-6 rounded-full 
+        flex items-center justify-center 
+        ${annotation.completed ? 'bg-green-500' : 'bg-blue-500'}
+        text-white hover:opacity-90 transition-opacity
+        touch-manipulation
+        active:scale-110
+        ${draggedAnnotation?.id === annotation.id ? 'scale-110 opacity-70' : ''}
+      `}
+      style={{
+        touchAction: 'none', // Prevents default touch behaviors
+        WebkitTapHighlightColor: 'transparent', // Removes tap highlight on iOS
+      }}
+    >
+      {annotation.completed ? (
+        <Check className="w-5 h-5 md:w-4 md:h-4" />
+      ) : (
+        <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
+      )}
+    </button>
 
       {selectedAnnotation?.id === annotation.id && (
         <div
@@ -1261,41 +1294,30 @@ const handleExportPNG = async (filename) => {
                         ${noteInput.visible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
                       `}
                     >
-                      <div className="flex flex-col gap-3">
+                      <form onSubmit={handleNoteSubmit} className="flex flex-col gap-3">
                         <input
                           id="noteInput"
                           type="text"
                           value={noteText}
                           onChange={(e) => setNoteText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleNoteSubmit(e);
-                            }
-                          }}
-                          placeholder="Add a note..."
+                          placeholder="Add a note... (press Enter to save)"
                           className="w-full px-4 py-3 border rounded-lg text-base"
                           autoFocus
                         />
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => {
                               setNoteInput({ visible: false, x: 0, y: 0 });
                               setNoteText('');
                             }}
+                            className="text-gray-500"
                           >
                             Cancel
                           </Button>
-                          <Button 
-                            type="button"
-                            onClick={handleNoteSubmit}
-                          >
-                            Add
-                          </Button>
                         </div>
-                      </div>
+                      </form>
                     </div>
                   </>
                 )}
