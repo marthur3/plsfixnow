@@ -1153,7 +1153,7 @@ const generatePDF = async () => {
     setShowExportDialog({ visible: false });
   };
 
-// Replace handleCopyToClipboard with this version
+// Replace handleCopyToClipboard with this updated version
 const handleCopyToClipboard = async () => {
   try {
     const container = document.createElement('div');
@@ -1163,78 +1163,8 @@ const handleCopyToClipboard = async () => {
     container.style.backgroundColor = 'white';
     document.body.appendChild(container);
 
-    // Add current image and its annotations
-    const content = document.createElement('div');
-    content.style.position = 'relative';
-    content.style.width = '100%';
-    content.style.padding = '20px';
-    container.appendChild(content);
-
-    const img = new Image();
-    img.src = images[currentImageIndex].src;
-    await new Promise((resolve) => {
-      img.onload = resolve;
-    });
-
-    const imgWrapper = document.createElement('div');
-    imgWrapper.style.position = 'relative';
-    imgWrapper.appendChild(img);
-    content.appendChild(imgWrapper);
-
-    // Add annotations
-    const imageAnnotations = annotations[images[currentImageIndex].id] || [];
-    const annotationsLayer = document.createElement('div');
-    annotationsLayer.style.position = 'absolute';
-    annotationsLayer.style.top = '0';
-    annotationsLayer.style.left = '0';
-    annotationsLayer.style.width = '100%';
-    annotationsLayer.style.height = '100%';
-    imgWrapper.appendChild(annotationsLayer);
-
-    imageAnnotations.forEach(ann => {
-      const marker = document.createElement('div');
-      marker.style.position = 'absolute';
-      marker.style.left = `${(ann.x / img.naturalWidth) * 100}%`;
-      marker.style.top = `${(ann.y / img.naturalHeight) * 100}%`;
-      marker.style.transform = 'translate(-50%, -50%)';
-      
-      const dot = document.createElement('div');
-      dot.style.width = '24px';
-      dot.style.height = '24px';
-      dot.style.borderRadius = '50%';
-      dot.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
-      dot.style.color = 'white';
-      dot.style.display = 'flex';
-      dot.style.alignItems = 'center';
-      dot.style.justifyContent = 'center';
-      dot.style.fontSize = '14px';
-      dot.style.border = '2px solid white';
-      dot.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-      dot.innerHTML = ann.completed ? '✓' : '!';
-      
-      marker.appendChild(dot);
-      
-      // Add note text
-      const note = document.createElement('div');
-      note.style.position = 'absolute';
-      note.style.top = '100%';
-      note.style.left = '50%';
-      note.style.transform = 'translateX(-50%)';
-      note.style.backgroundColor = 'white';
-      note.style.padding = '4px 8px';
-      note.style.borderRadius = '4px';
-      note.style.fontSize = '12px';
-      note.style.whiteSpace = 'normal';
-      note.style.maxWidth = '200px';
-      note.style.textAlign = 'center';
-      note.style.marginTop = '4px';
-      note.style.border = '1px solid #e5e7eb';
-      note.style.zIndex = '11';
-      note.textContent = ann.note;
-      
-      marker.appendChild(note);
-      annotationsLayer.appendChild(marker);
-    });
+    // Rest of container setup...
+    // ...existing code...
 
     // Capture as canvas
     const canvas = await html2canvas(container, {
@@ -1244,21 +1174,39 @@ const handleCopyToClipboard = async () => {
       allowTaint: true
     });
 
-    // Convert to blob
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    
-    // Create clipboard item
-    const clipboardItem = new ClipboardItem({
-      'image/png': blob
-    });
-    
-    // Copy to clipboard
-    await navigator.clipboard.write([clipboardItem]);
+    try {
+      // Try modern clipboard API first
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const clipboardItem = new ClipboardItem({ 'image/png': blob });
+      await navigator.clipboard.write([clipboardItem]);
+    } catch (clipError) {
+      console.log('Modern clipboard API failed, trying fallback...', clipError);
+      
+      // Fallback for mobile: Create temporary link
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      // Create temporary elements
+      const tempLink = document.createElement('a');
+      tempLink.href = dataUrl;
+      tempLink.download = 'annotation.png';
+      
+      // Add message for mobile users
+      setClipboardFeedback('Downloading image...');
+      
+      // Trigger download
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+      
+      setClipboardFeedback('Image downloaded');
+    }
     
     // Clean up
     document.body.removeChild(container);
     
-    setClipboardFeedback('Copied to clipboard!');
+    if (!clipboardFeedback) {
+      setClipboardFeedback('Copied to clipboard!');
+    }
     setTimeout(() => setClipboardFeedback(null), 2000);
   } catch (error) {
     console.error('Copy failed:', error);

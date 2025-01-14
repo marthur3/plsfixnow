@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { X, Share2, Copy, Download, FileType } from 'lucide-react';
 
-const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShare }) => {
+const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShare, isMobile }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 relative">
@@ -33,7 +33,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShar
           variant="outline"
         >
           <Copy className="w-4 h-4" />
-          Copy Image to Clipboard
+          {isMobile ? 'Save Image' : 'Copy to Clipboard'}
         </Button>
 
         {/* Export Form */}
