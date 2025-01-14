@@ -1153,38 +1153,37 @@ const generatePDF = async () => {
 
   // Add share handler
   const handleShare = async () => {
+    if (!navigator?.share) {
+      setClipboardFeedback('Sharing not supported on this device');
+      setTimeout(() => setClipboardFeedback(null), 2000);
+      return;
+    }
+
     try {
-      let shareData;
-      
-      // Try file share first
+      const shareData = {
+        title: 'PLSFIX Annotations',
+        text: 'Check out my annotations!',
+        url: window.location.href
+      };
+
+      // Try to create PDF for sharing if supported
       if (navigator.canShare) {
-        const blob = await generatePDF();
-        const file = new File([blob], 'annotations.pdf', { type: 'application/pdf' });
-        
-        if (navigator.canShare({ files: [file] })) {
-          shareData = {
-            files: [file],
-            title: 'PLSFIX Annotations',
-            text: 'Check out my annotations!'
-          };
+        try {
+          const blob = await generatePDF();
+          const file = new File([blob], 'annotations.pdf', { type: 'application/pdf' });
+          if (navigator.canShare({ files: [file] })) {
+            shareData.files = [file];
+          }
+        } catch (err) {
+          console.log('File sharing not supported, falling back to link sharing');
         }
       }
-      
-      // Fallback to basic share if file share not supported
-      if (!shareData) {
-        shareData = {
-          title: 'PLSFIX Annotations',
-          text: 'Check out my annotations!',
-          url: window.location.href
-        };
-      }
-      
+
       await navigator.share(shareData);
     } catch (error) {
-      // Only show error for actual failures, not user cancellations
       if (error.name !== 'AbortError') {
         console.error('Share failed:', error);
-        setClipboardFeedback('Share failed');
+        setClipboardFeedback('Share failed - ' + error.message);
         setTimeout(() => setClipboardFeedback(null), 2000);
       }
     }

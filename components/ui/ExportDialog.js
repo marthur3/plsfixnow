@@ -14,15 +14,15 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare }) => 
         
         <h2 className="text-xl font-semibold mb-4">Export Options</h2>
         
-        {/* Share Button - simplified check */}
-        {canShare && (
+        {/* Share Button - with better visibility check */}
+        {typeof window !== 'undefined' && canShare && (
           <Button
             onClick={onShare}
             className="w-full mb-4 gap-2"
             variant="outline"
           >
             <Share2 className="w-4 h-4" />
-            Share via System Dialog
+            Share{navigator.canShare?.({ files: [] }) ? ' as PDF' : ' Link'}
           </Button>
         )}
 
