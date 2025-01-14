@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon } from 'lucide-react';
+import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Instructions from './Instructions';
 import html2canvas from 'html2canvas';
@@ -33,6 +33,9 @@ const ImageAnnotator = () => {
 
   const [lastTap, setLastTap] = useState(0);
   const [touchMoved, setTouchMoved] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showFAB, setShowFAB] = useState(true);
+  const lastScrollPosition = useRef(0);
 
   useEffect(() => {
     const handlePaste = async (e) => {
@@ -71,12 +74,15 @@ const ImageAnnotator = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Handle annotation popup clicks
       if (selectedAnnotation && 
           popupRef.current && 
-          !popupRef.current.contains(event.target)) {
+          !popupRef.current.contains(event.target) &&
+          !event.target.closest('.annotation')) {
         setSelectedAnnotation(null);
       }
       
+      // Handle note input clicks
       if (noteInput.visible && 
           noteInputRef.current && 
           !noteInputRef.current.contains(event.target) &&
@@ -87,10 +93,11 @@ const ImageAnnotator = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchend', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchend', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [selectedAnnotation, noteInput.visible]);
 
@@ -124,6 +131,47 @@ const ImageAnnotator = () => {
       observer.disconnect();
     };
   }, [currentImageIndex]);
+
+  // Add useEffect for mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // Handle FAB visibility on scroll
+    const handleScroll = () => {
+      const currentScroll = window.scrollY;
+      setShowFAB(currentScroll <= lastScrollPosition.current || currentScroll < 100);
+      lastScrollPosition.current = currentScroll;
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Add useEffect for escape key handling
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (noteInput.visible) {
+          setNoteInput({ visible: false, x: 0, y: 0 });
+          setNoteText('');
+        }
+        if (selectedAnnotation) {
+          setSelectedAnnotation(null);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [noteInput.visible, selectedAnnotation]);
 
   const noteInputStyles = {
     position: 'fixed',
@@ -177,29 +225,20 @@ const ImageAnnotator = () => {
   };
 
   const handleTouchEnd = (e) => {
-    const now = Date.now();
-    const touchDuration = now - touchStartTime;
-    
-    // Detect double tap
-    if (!touchMoved) {
-      const DOUBLE_TAP_DELAY = 300;
-      if (now - lastTap < DOUBLE_TAP_DELAY) {
-        // Double tap detected
-        e.preventDefault();
-        setNoteInput({
-          visible: true,
-          x: touchStartPos.x,
-          y: touchStartPos.y
-        });
-        
-        setTimeout(() => {
-          const input = document.querySelector('#noteInput');
-          if (input) input.focus();
-        }, 100);
-      } else {
-        // Single tap
-        setLastTap(now);
-      }
+    if (!touchMoved && isMobile) {
+      // On mobile, show the note input directly on single tap
+      // if the tap isn't part of a drag operation
+      e.preventDefault();
+      setNoteInput({
+        visible: true,
+        x: touchStartPos.x,
+        y: touchStartPos.y
+      });
+      
+      setTimeout(() => {
+        const input = document.querySelector('#noteInput');
+        if (input) input.focus();
+      }, 100);
     }
   };
 
@@ -682,106 +721,143 @@ const handleExportSubmit = async (e) => {
 // 2. Fix the loop to properly export all pages
 // 3. Maintain current quality settings (scale: 2, backgroundColor: 'white')
 const handleExportPNG = async (filename) => {
-  const container = document.createElement('div');
-  container.style.position = 'absolute';
-  container.style.left = '-9999px';
-  container.style.top = '-9999px';
-  container.style.width = '1200px'; // Fixed width for consistent rendering
-  document.body.appendChild(container);
+  const debugLog = (msg, data) => {
+    console.log(`[Export Debug] ${msg}`, data || '');
+  };
 
   try {
+    debugLog('Starting export');
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'px',
       format: 'a4',
-      hotfixes: ['px_scaling'] // Enable px scaling hotfix
+      hotfixes: ['px_scaling']
     });
-    
-    for (let i = 0; i < images.length; i++) {
-      const imageContainer = document.createElement('div');
-      imageContainer.style.position = 'relative';
-      imageContainer.style.width = '100%';
-      imageContainer.style.backgroundColor = 'white';
-      imageContainer.style.padding = '20px';
-      
-      container.innerHTML = '';
-      container.appendChild(imageContainer);
 
-      // Add page header
+    for (let i = 0; i < images.length; i++) {
+      debugLog(`Processing page ${i + 1}/${images.length}`);
+      
+      // Create container
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '1200px';
+      container.style.backgroundColor = 'white';
+      document.body.appendChild(container);
+
+      // Create content div
+      const content = document.createElement('div');
+      content.style.position = 'relative';
+      content.style.width = '100%';
+      content.style.padding = '20px';
+      content.style.backgroundColor = 'white';
+      container.appendChild(content);
+
+      // Add header
       const header = document.createElement('h2');
       header.style.fontSize = '24px';
       header.style.marginBottom = '16px';
       header.textContent = `Page ${i + 1}`;
-      imageContainer.appendChild(header);
+      content.appendChild(header);
 
-      // Create image wrapper for consistent positioning
+      debugLog('Loading image');
+      // Load and add image
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // Try to handle CORS
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          debugLog('Image loaded', {
+            width: img.naturalWidth,
+            height: img.naturalHeight
+          });
+          resolve();
+        };
+        img.onerror = (e) => {
+          debugLog('Image load error', e);
+          reject(e);
+        };
+        img.src = images[i].src;
+      });
+
+      // Create image wrapper
       const imgWrapper = document.createElement('div');
       imgWrapper.style.position = 'relative';
       imgWrapper.style.width = '100%';
       imgWrapper.style.display = 'flex';
       imgWrapper.style.justifyContent = 'center';
+      imgWrapper.style.marginBottom = '20px';
       
-      const imgElement = document.createElement('img');
-      imgElement.src = images[i].src;
-      imgElement.style.maxWidth = '100%';
-      imgElement.style.height = 'auto';
-      imgElement.style.display = 'block';
+      // Style the image
+      img.style.maxWidth = '100%';
+      img.style.height = 'auto';
+      img.style.display = 'block';
       
-      await new Promise((resolve) => {
-        imgElement.onload = resolve;
-      });
-      
-      imgWrapper.appendChild(imgElement);
-      imageContainer.appendChild(imgWrapper);
+      imgWrapper.appendChild(img);
+      content.appendChild(imgWrapper);
 
-      // Create annotations container with fixed positioning
-      const annotationsContainer = document.createElement('div');
-      annotationsContainer.style.position = 'absolute';
-      annotationsContainer.style.top = '0';
-      annotationsContainer.style.left = '0';
-      annotationsContainer.style.width = '100%';
-      annotationsContainer.style.height = '100%';
-      imgWrapper.appendChild(annotationsContainer);
-
+      // Add annotations
+      debugLog('Adding annotations');
       const imageAnnotations = annotations[images[i].id] || [];
-      imageAnnotations.forEach(ann => {
+      debugLog(`Found ${imageAnnotations.length} annotations`);
+      
+      const annotationsWrapper = document.createElement('div');
+      annotationsWrapper.style.position = 'absolute';
+      annotationsWrapper.style.top = '0';
+      annotationsWrapper.style.left = '0';
+      annotationsWrapper.style.width = '100%';
+      annotationsWrapper.style.height = '100%';
+      imgWrapper.appendChild(annotationsWrapper);
+
+      imageAnnotations.forEach((ann, index) => {
         const marker = document.createElement('div');
         marker.style.position = 'absolute';
-        marker.style.left = `${ann.x}%`;
-        marker.style.top = `${ann.y}%`;
+        marker.style.left = `${(ann.x / img.naturalWidth) * 100}%`;
+        marker.style.top = `${(ann.y / img.naturalHeight) * 100}%`;
         marker.style.transform = 'translate(-50%, -50%)';
-
-        const button = document.createElement('button');
-        button.style.width = '32px';
-        button.style.height = '32px';
+        marker.style.zIndex = '10';
+        
+        const button = document.createElement('div');
+        button.style.width = '24px';
+        button.style.height = '24px';
         button.style.borderRadius = '50%';
         button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
         button.style.color = 'white';
         button.style.border = '2px solid white';
         button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-        button.style.fontSize = '16px';
+        button.style.display = 'flex';
+        button.style.alignItems = 'center';
+        button.style.justifyContent = 'center';
+        button.style.fontSize = '14px';
         button.style.fontWeight = 'bold';
         button.innerHTML = ann.completed ? '✓' : '!';
-
+        
         marker.appendChild(button);
         
-        // Position note text more reliably
+        // Add note label
         const note = document.createElement('div');
         note.style.position = 'absolute';
-        note.style.backgroundColor = 'white';
-        note.style.padding = '8px 12px';
-        note.style.borderRadius = '6px';
-        note.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-        note.style.top = '120%';
+        note.style.top = '100%';
         note.style.left = '50%';
         note.style.transform = 'translateX(-50%)';
-        note.style.width = '200px';
+        note.style.backgroundColor = 'white';
+        note.style.padding = '4px 8px';
+        note.style.borderRadius = '4px';
         note.style.fontSize = '12px';
+        note.style.whiteSpace = 'nowrap';
+        note.style.marginTop = '4px';
         note.style.border = '1px solid #e5e7eb';
+        note.style.zIndex = '11';
         note.textContent = ann.note;
         
         marker.appendChild(note);
-        annotationsContainer.appendChild(marker);
+        annotationsWrapper.appendChild(marker);
+        
+        debugLog(`Added annotation ${index + 1}`, {
+          x: ann.x,
+          y: ann.y,
+          text: ann.note
+        });
       });
 
       // Add footer
@@ -789,29 +865,38 @@ const handleExportPNG = async (filename) => {
       footer.style.textAlign = 'center';
       footer.style.padding = '16px';
       footer.style.marginTop = '20px';
-      footer.style.borderTop = '1px solid #e5e7eb';
       footer.style.fontSize = '12px';
       footer.innerHTML = 'Created with plsfixnow.vercel.app';
-      imageContainer.appendChild(footer);
+      content.appendChild(footer);
 
+      debugLog('Waiting for render');
       // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      const canvas = await html2canvas(imageContainer, {
+      debugLog('Capturing with html2canvas');
+      // Capture the page
+      const canvas = await html2canvas(container, {
         backgroundColor: 'white',
         scale: 2,
-        logging: false,
+        logging: true, // Enable html2canvas logging
         useCORS: true,
         allowTaint: true,
-        windowWidth: 1200,
-        imageTimeout: 0,
+        width: 1200,
+        height: container.offsetHeight,
+        onclone: (clonedDoc) => {
+          debugLog('Clone callback', {
+            height: clonedDoc.body.offsetHeight,
+            elements: clonedDoc.body.children.length
+          });
+        }
       });
 
+      debugLog('Adding page to PDF');
       if (i > 0) {
         pdf.addPage();
       }
 
-      // Calculate dimensions to fit page while maintaining aspect ratio
+      // Calculate dimensions
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
@@ -825,12 +910,23 @@ const handleExportPNG = async (filename) => {
       const finalWidth = imgWidth * ratio;
       const finalHeight = imgHeight * ratio;
       
-      // Center image on page
       const x = (pageWidth - finalWidth) / 2;
       const y = (pageHeight - finalHeight) / 2;
 
+      debugLog('PDF dimensions', {
+        pageWidth,
+        pageHeight,
+        imgWidth,
+        imgHeight,
+        ratio,
+        finalWidth,
+        finalHeight,
+        x,
+        y
+      });
+
       pdf.addImage(
-        canvas.toDataURL('image/png'),
+        canvas.toDataURL('image/png', 1.0),
         'PNG',
         x,
         y,
@@ -839,17 +935,53 @@ const handleExportPNG = async (filename) => {
         undefined,
         'FAST'
       );
+
+      // Clean up
+      document.body.removeChild(container);
+      debugLog(`Completed page ${i + 1}`);
     }
 
+    debugLog('Saving PDF');
     pdf.save(`${filename}.pdf`);
-  } finally {
-    document.body.removeChild(container);
+    debugLog('Export complete');
+  } catch (error) {
+    debugLog('Export error', error);
+    console.error('Export error:', error);
+    // Optionally show error to user
+    alert('Export failed. Check console for details.');
   }
 };
 
   const currentAnnotations = images[currentImageIndex]
     ? annotations[images[currentImageIndex].id] || []
     : [];
+
+  // Add FAB click handler
+  const handleFABClick = (e) => {
+    if (!imageRef.current) return;
+    
+    // Calculate center position of visible image
+    const rect = imageRef.current.getBoundingClientRect();
+    const clientX = rect.left + rect.width / 2;
+    const clientY = rect.top + rect.height / 2;
+    
+    const { x, y } = getRelativeCoordinates(clientX, clientY);
+    
+    setNoteInput({
+      visible: true,
+      x,
+      y
+    });
+  };
+
+  // Update the backdrop click handler
+  const handleBackdropClick = (e) => {
+    // Only close if clicking the backdrop itself, not its children
+    if (e.target === e.currentTarget) {
+      setNoteInput({ visible: false, x: 0, y: 0 });
+      setNoteText('');
+    }
+  };
 
   return (
     <div className="relative">
@@ -1118,14 +1250,16 @@ const handleExportPNG = async (filename) => {
                   <>
                     <div 
                       className="fixed inset-0 bg-black/50 z-40"
-                      onClick={() => {
-                        setNoteInput({ visible: false, x: 0, y: 0 });
-                        setNoteText('');
-                      }}
+                      onClick={handleBackdropClick}
                     />
                     <div
                       ref={noteInputRef}
-                      style={noteInputStyles}
+                      className={`
+                        fixed left-1/2 bottom-4 -translate-x-1/2 w-[calc(100%-2rem)] 
+                        max-w-md bg-white rounded-lg shadow-lg p-4 z-50
+                        transform transition-all duration-200 ease-out
+                        ${noteInput.visible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
+                      `}
                     >
                       <div className="flex flex-col gap-3">
                         <input
@@ -1139,7 +1273,7 @@ const handleExportPNG = async (filename) => {
                               handleNoteSubmit(e);
                             }
                           }}
-                          placeholder="Enter note text..."
+                          placeholder="Add a note..."
                           className="w-full px-4 py-3 border rounded-lg text-base"
                           autoFocus
                         />
@@ -1147,8 +1281,6 @@ const handleExportPNG = async (filename) => {
                           <Button
                             type="button"
                             variant="outline"
-                            size="lg"
-                            className="py-3 px-4"
                             onClick={() => {
                               setNoteInput({ visible: false, x: 0, y: 0 });
                               setNoteText('');
@@ -1157,9 +1289,7 @@ const handleExportPNG = async (filename) => {
                             Cancel
                           </Button>
                           <Button 
-                            type="button" 
-                            size="lg"
-                            className="py-3 px-4"
+                            type="button"
                             onClick={handleNoteSubmit}
                           >
                             Add
@@ -1187,6 +1317,22 @@ const handleExportPNG = async (filename) => {
     </a>
   </p>
 </div>
+      {/* Add Floating Action Button for mobile */}
+      {isMobile && images.length > 0 && (
+        <div 
+          className={`fixed bottom-6 right-6 transition-all duration-300 transform ${
+            showFAB ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+          }`}
+        >
+          <Button
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg"
+            onClick={handleFABClick}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
