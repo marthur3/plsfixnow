@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { X, Share2, Copy, Download, FileType } from 'lucide-react';
+import { X, Share2, Download } from 'lucide-react';
 
-const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShare, isMobile }) => {
+const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 relative">
@@ -14,7 +14,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShar
         
         <h2 className="text-xl font-semibold mb-4">Export Options</h2>
         
-        {/* Mobile Share Button */}
+        {/* Share Button - simplified check */}
         {canShare && (
           <Button
             onClick={onShare}
@@ -25,16 +25,6 @@ const ExportDialog = ({ onSubmit, onClose, onShare, onCopy, defaultName, canShar
             Share via System Dialog
           </Button>
         )}
-
-        {/* Copy to Clipboard Button */}
-        <Button
-          onClick={onCopy}
-          className="w-full mb-4 gap-2"
-          variant="outline"
-        >
-          <Copy className="w-4 h-4" />
-          {isMobile ? 'Save Image' : 'Copy to Clipboard'}
-        </Button>
 
         {/* Export Form */}
         <form onSubmit={onSubmit} className="space-y-4">

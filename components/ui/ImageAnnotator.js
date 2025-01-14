@@ -43,8 +43,23 @@ const ImageAnnotator = () => {
   // Add canShare detection
   const [canShare, setCanShare] = useState(false);
   
+  // Update canShare detection to check for files support
+  const checkShareCapabilities = async () => {
+    if (!navigator.share) return false;
+    try {
+      if (navigator.canShare) {
+        // Test if file sharing is supported
+        return await navigator.canShare({ files: [] });
+      }
+      // Basic share is supported
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   useEffect(() => {
-    setCanShare(!!navigator.share);
+    checkShareCapabilities().then(setCanShare);
   }, []);
 
   useEffect(() => {
@@ -1139,16 +1154,39 @@ const generatePDF = async () => {
   // Add share handler
   const handleShare = async () => {
     try {
-      const blob = await generatePDF();
-      const file = new File([blob], 'annotations.pdf', { type: 'application/pdf' });
+      let shareData;
       
-      await navigator.share({
-        files: [file],
-        title: 'PLSFIX Annotations',
-        text: 'Check out my annotations!'
-      });
+      // Try file share first
+      if (navigator.canShare) {
+        const blob = await generatePDF();
+        const file = new File([blob], 'annotations.pdf', { type: 'application/pdf' });
+        
+        if (navigator.canShare({ files: [file] })) {
+          shareData = {
+            files: [file],
+            title: 'PLSFIX Annotations',
+            text: 'Check out my annotations!'
+          };
+        }
+      }
+      
+      // Fallback to basic share if file share not supported
+      if (!shareData) {
+        shareData = {
+          title: 'PLSFIX Annotations',
+          text: 'Check out my annotations!',
+          url: window.location.href
+        };
+      }
+      
+      await navigator.share(shareData);
     } catch (error) {
-      console.error('Share failed:', error);
+      // Only show error for actual failures, not user cancellations
+      if (error.name !== 'AbortError') {
+        console.error('Share failed:', error);
+        setClipboardFeedback('Share failed');
+        setTimeout(() => setClipboardFeedback(null), 2000);
+      }
     }
     setShowExportDialog({ visible: false });
   };
@@ -1225,7 +1263,7 @@ const handleCopyToClipboard = async () => {
     }
   };
 
-  // Update toolbar buttons
+  // Update toolbar buttons - remove copy button
 const exportButtons = (
   <div className="flex items-center justify-end gap-2">
     <Button
@@ -1236,15 +1274,6 @@ const exportButtons = (
       <Download className="w-4 h-4" />
       <span className="hidden md:inline">Export</span>
       <span className="md:hidden">Export</span>
-    </Button>
-    <Button
-      onClick={handleCopyToClipboard}
-      variant="outline"
-      className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
-    >
-      <Copy className="w-4 h-4" />
-      <span className="hidden md:inline">Copy</span>
-      <span className="md:hidden">Copy</span>
     </Button>
   </div>
 );
@@ -1258,7 +1287,6 @@ const exportButtons = (
           onClose={() => setShowExportDialog({ visible: false, type: null })}
           defaultName={`annotation-${currentImageIndex + 1}`}
           onShare={handleShare}
-          onCopy={handleCopyToClipboard}
           canShare={canShare}
         />
       )}
