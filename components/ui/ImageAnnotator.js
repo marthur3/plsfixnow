@@ -8,6 +8,9 @@ import ExportDialog from './ExportDialog';
 // Add jsPDF import
 import { jsPDF } from 'jspdf';
 import { Analytics } from '@vercel/analytics/react';
+import { Share2 } from 'lucide-react';
+
+
 
 const ImageAnnotator = () => {
   const [images, setImages] = useState([]);  // Array of {id, src}
@@ -46,12 +49,17 @@ const ImageAnnotator = () => {
   // Update canShare detection to check for files support
   const checkShareCapabilities = async () => {
     if (!navigator.share) return false;
+    
     try {
+      // Check basic share support
+      await navigator.share({ title: 'test' }).catch(() => {});
+      
+      // Check file sharing support if available
       if (navigator.canShare) {
-        // Test if file sharing is supported
-        return await navigator.canShare({ files: [] });
+        const testFile = new File([""], "test.pdf", { type: "application/pdf" });
+        return await navigator.canShare({ files: [testFile] });
       }
-      // Basic share is supported
+      
       return true;
     } catch {
       return false;
@@ -775,13 +783,12 @@ const handleExportSubmit = async (e) => {
 // 1. Keep all existing styling and marker/note positioning
 // 2. Fix the loop to properly export all pages
 // 3. Maintain current quality settings (scale: 2, backgroundColor: 'white')
-const handleExportPNG = async (filename) => {
-  const debugLog = (msg, data) => {
-    console.log(`[Export Debug] ${msg}`, data || '');
-  };
 
+
+// Add generatePDF function before handleExportPNG
+const generatePDF = async () => {
   try {
-    debugLog('Starting export');
+    // Initialize PDF with optimal settings
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'px',
@@ -789,197 +796,292 @@ const handleExportPNG = async (filename) => {
       hotfixes: ['px_scaling']
     });
 
-    for (let i = 0; i < images.length; i++) {
-      debugLog(`Processing page ${i + 1}/${images.length}`);
+    // Define layout constants
+    const PAGE_PADDING = 40;
+    const NOTE_PADDING = 12;
+    const MIN_FONT_SIZE = 12;
+    const NOTE_MAX_WIDTH = 200;
+    const NOTE_MARGIN = 20;
+    const MARKER_SIZE = 24;
+
+    // Helper function for collision detection
+    const checkCollision = (notes, newNote) => {
+      return notes.some(note => {
+        const dx = note.x - newNote.x;
+        const dy = note.y - newNote.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < NOTE_MARGIN * 3; // Increased margin for better spacing
+      });
+    };
+
+    // Helper function for finding valid note positions
+    const findValidPosition = (notes, baseX, baseY, index, imageWidth, imageHeight) => {
+      let bestPosition = null;
+      let minDistanceToEdge = 0;
       
-      // Create container
+      // Try different angles and distances
+      for (let distance = NOTE_MARGIN * 2; distance <= NOTE_MARGIN * 4; distance += NOTE_MARGIN) {
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+          const x = baseX + distance * Math.cos(angle);
+          const y = baseY + distance * Math.sin(angle);
+          
+          // Check if position is within image bounds with padding
+          if (x < NOTE_MARGIN || x > imageWidth - NOTE_MARGIN || 
+              y < NOTE_MARGIN || y > imageHeight - NOTE_MARGIN) {
+            continue;
+          }
+          
+          const position = { x, y };
+          
+          if (!checkCollision(notes, position)) {
+            const distanceToEdge = Math.min(
+              x, y, imageWidth - x, imageHeight - y
+            );
+            
+            if (!bestPosition || distanceToEdge > minDistanceToEdge) {
+              bestPosition = position;
+              minDistanceToEdge = distanceToEdge;
+            }
+          }
+        }
+        
+        if (bestPosition) break;
+      }
+      
+      // Fallback if no valid position found
+      return bestPosition || {
+        x: baseX + NOTE_MARGIN * 2,
+        y: baseY + NOTE_MARGIN * 2
+      };
+    };
+
+    for (let i = 0; i < images.length; i++) {
+      // Create temporary container for each page
       const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = '1200px';
-      container.style.backgroundColor = 'white';
+      container.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: 1200px;
+        background-color: white;
+        padding: ${PAGE_PADDING}px;
+      `;
       document.body.appendChild(container);
 
-      // Create content div
+      // Setup page content
       const content = document.createElement('div');
-      content.style.position = 'relative';
-      content.style.width = '100%';
-      content.style.padding = '20px';
-      content.style.backgroundColor = 'white';
+      content.style.cssText = `
+        position: relative;
+        width: 100%;
+        background-color: white;
+      `;
       container.appendChild(content);
 
-      // Add header
+      // Add page header
       const header = document.createElement('h2');
-      header.style.fontSize = '24px';
-      header.style.marginBottom = '16px';
+      header.style.cssText = `
+        font-size: 24px;
+        margin-bottom: 16px;
+        color: #374151;
+        font-weight: 600;
+      `;
       header.textContent = `Page ${i + 1}`;
       content.appendChild(header);
 
-      debugLog('Loading image');
-      // Load and add image
+      // Add image
       const img = new Image();
-      img.crossOrigin = 'anonymous'; // Try to handle CORS
-      await new Promise((resolve, reject) => {
-        img.onload = () => {
-          debugLog('Image loaded', {
-            width: img.naturalWidth,
-            height: img.naturalHeight
-          });
-          resolve();
-        };
-        img.onerror = (e) => {
-          debugLog('Image load error', e);
-          reject(e);
-        };
-        img.src = images[i].src;
-      });
-
-      // Create image wrapper
+      img.src = images[i].src;
+      await new Promise(resolve => { img.onload = resolve; });
+      
       const imgWrapper = document.createElement('div');
-      imgWrapper.style.position = 'relative';
-      imgWrapper.style.width = '100%';
-      imgWrapper.style.display = 'flex';
-      imgWrapper.style.justifyContent = 'center';
-      imgWrapper.style.marginBottom = '20px';
-      
-      // Style the image
-      img.style.maxWidth = '100%';
-      img.style.height = 'auto';
-      img.style.display = 'block';
-      
+      imgWrapper.style.cssText = `
+        position: relative;
+        width: fit-content;
+        margin: 0 auto;
+      `;
       imgWrapper.appendChild(img);
       content.appendChild(imgWrapper);
 
-      // Add annotations
-      debugLog('Adding annotations');
-      const imageAnnotations = annotations[images[i].id] || [];
-      debugLog(`Found ${imageAnnotations.length} annotations`);
-      
-      const annotationsWrapper = document.createElement('div');
-      annotationsWrapper.style.position = 'absolute';
-      annotationsWrapper.style.top = '0';
-      annotationsWrapper.style.left = '0';
-      annotationsWrapper.style.width = '100%';
-      annotationsWrapper.style.height = '100%';
-      imgWrapper.appendChild(annotationsWrapper);
+      // Create SVG layer for improved line rendering
+      const svgLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svgLayer.setAttribute('width', '100%');
+      svgLayer.setAttribute('height', '100%');
+      svgLayer.setAttribute('viewBox', `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
+      svgLayer.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svgLayer.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+      `;
+      imgWrapper.appendChild(svgLayer);
 
-      imageAnnotations.forEach((ann, index) => {
+      // Process annotations
+      const imageAnnotations = annotations[images[i].id] || [];
+      const processedNotes = [];
+      
+      // Sort annotations by y-position for better layout
+      const sortedAnnotations = [...imageAnnotations].sort((a, b) => a.y - b.y);
+
+      sortedAnnotations.forEach((ann, index) => {
+        // Calculate marker position in pixels
+        const xPos = ann.x;
+        const yPos = ann.y;
+
+        // Create marker
         const marker = document.createElement('div');
-        marker.style.position = 'absolute';
-        marker.style.left = `${(ann.x / img.naturalWidth) * 100}%`;
-        marker.style.top = `${(ann.y / img.naturalHeight) * 100}%`;
-        marker.style.transform = 'translate(-50%, -50%)';
-        marker.style.zIndex = '10';
+        marker.style.cssText = `
+          position: absolute;
+          left: ${(xPos / img.naturalWidth) * 100}%;
+          top: ${(yPos / img.naturalHeight) * 100}%;
+          transform: translate(-50%, -50%);
+          z-index: 3;
+        `;
+
+        // Create marker dot
+        const dot = document.createElement('div');
+        dot.style.cssText = `
+          width: ${MARKER_SIZE}px;
+          height: ${MARKER_SIZE}px;
+          border-radius: 50%;
+          background-color: ${ann.completed ? '#22c55e' : '#3b82f6'};
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-center: center;
+          font-size: ${MIN_FONT_SIZE}px;
+          font-weight: bold;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `;
+        dot.innerHTML = `<span style="transform: translateY(-1px)">${ann.completed ? '✓' : '!'}</span>`;
+        marker.appendChild(dot);
+
+        // Calculate note position with collision avoidance
+        const notePosition = findValidPosition(
+          processedNotes,
+          xPos,
+          yPos,
+          index,
+          img.naturalWidth,
+          img.naturalHeight
+        );
+
+        // Create curved connector line
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         
-        const button = document.createElement('div');
-        button.style.width = '24px';
-        button.style.height = '24px';
-        button.style.borderRadius = '50%';
-        button.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
-        button.style.color = 'white';
-        button.style.border = '2px solid white';
-        button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-        button.style.display = 'flex';
-        button.style.alignItems = 'center';
-        button.style.justifyContent = 'center';
-        button.style.fontSize = '14px';
-        button.style.fontWeight = 'bold';
-        button.innerHTML = ann.completed ? '✓' : '!';
+        // Calculate control points for smooth curve
+        const midX = (xPos + notePosition.x) / 2;
+        const offset = 30; // Curve offset
+        const sign = notePosition.y < yPos ? -1 : 1;
         
-        marker.appendChild(button);
+        const pathStr = `
+          M ${xPos} ${yPos}
+          C ${midX} ${yPos + offset * sign},
+            ${midX} ${notePosition.y - offset * sign},
+            ${notePosition.x} ${notePosition.y}
+        `;
+
+        // Background path (white shadow)
+        const bgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        bgPath.setAttribute('d', pathStr);
+        bgPath.setAttribute('fill', 'none');
+        bgPath.setAttribute('stroke', 'white');
+        bgPath.setAttribute('stroke-width', '4');
+        bgPath.setAttribute('stroke-linecap', 'round');
+
+        // Foreground path (colored line)
+        const fgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        fgPath.setAttribute('d', pathStr);
+        fgPath.setAttribute('fill', 'none');
+        fgPath.setAttribute('stroke', ann.completed ? '#22c55e' : '#3b82f6');
+        fgPath.setAttribute('stroke-width', '2');
+        fgPath.setAttribute('stroke-linecap', 'round');
+        fgPath.setAttribute('stroke-dasharray', '6 4');
+
+        line.appendChild(bgPath);
+        line.appendChild(fgPath);
+        svgLayer.appendChild(line);
+
+        // Create note box with improved styling
+        const noteBox = document.createElement('div');
+        noteBox.style.cssText = `
+          position: absolute;
+          top: ${(notePosition.y / img.naturalHeight) * 100}%;
+          left: ${(notePosition.x / img.naturalWidth) * 100}%;
+          transform: translate(-50%, -50%);
+          background-color: white;
+          padding: ${NOTE_PADDING}px;
+          border-radius: 6px;
+          font-size: ${MIN_FONT_SIZE}px;
+          max-width: ${NOTE_MAX_WIDTH}px;
+          word-wrap: break-word;
+          border: ${ann.completed ? '1px solid #22c55e' : '1px solid #3b82f6'};
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          z-index: 2;
+          color: #374151;
+          line-height: 1.4;
+        `;
+        noteBox.textContent = ann.note;
         
-        // Add note label
-        const note = document.createElement('div');
-        note.style.position = 'absolute';
-        note.style.top = '100%';
-        note.style.left = '50%';
-        note.style.transform = 'translateX(-50%)';
-        note.style.backgroundColor = 'white';
-        note.style.padding = '4px 8px';
-        note.style.borderRadius = '4px';
-        note.style.fontSize = '12px';
-        note.style.whiteSpace = 'nowrap';
-        note.style.marginTop = '4px';
-        note.style.border = '1px solid #e5e7eb';
-        note.style.zIndex = '11';
-        note.textContent = ann.note;
-        
-        marker.appendChild(note);
-        annotationsWrapper.appendChild(marker);
-        
-        debugLog(`Added annotation ${index + 1}`, {
-          x: ann.x,
-          y: ann.y,
-          text: ann.note
-        });
+        imgWrapper.appendChild(marker);
+        imgWrapper.appendChild(noteBox);
+        processedNotes.push(notePosition);
       });
 
       // Add footer
       const footer = document.createElement('div');
-      footer.style.textAlign = 'center';
-      footer.style.padding = '16px';
-      footer.style.marginTop = '20px';
-      footer.style.fontSize = '12px';
-      footer.innerHTML = 'Created with plsfixnow.vercel.app';
+      footer.style.cssText = `
+        text-align: center;
+        padding: 16px;
+        margin-top: 20px;
+        color: #6b7280;
+        font-size: 12px;
+      `;
+      footer.textContent = 'Created with PLSFIX-THX';
       content.appendChild(footer);
 
-      debugLog('Waiting for render');
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      debugLog('Capturing with html2canvas');
-      // Capture the page
+      // Capture page with html2canvas
       const canvas = await html2canvas(container, {
         backgroundColor: 'white',
         scale: 2,
-        logging: true, // Enable html2canvas logging
         useCORS: true,
         allowTaint: true,
-        width: 1200,
-        height: container.offsetHeight,
+        logging: false,
         onclone: (clonedDoc) => {
-          debugLog('Clone callback', {
-            height: clonedDoc.body.offsetHeight,
-            elements: clonedDoc.body.children.length
+          const elements = clonedDoc.querySelectorAll('svg, path, div');
+          elements.forEach(el => {
+            el.style.opacity = '1';
+            el.style.visibility = 'visible';
           });
         }
       });
 
-      debugLog('Adding page to PDF');
+      // Add new page for all pages except the first
       if (i > 0) {
         pdf.addPage();
       }
 
-      // Calculate dimensions
+      // Calculate dimensions to fit page
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      
       const ratio = Math.min(
-        (pageWidth - 40) / imgWidth,
-        (pageHeight - 40) / imgHeight
+        (pageWidth - PAGE_PADDING * 2) / canvas.width,
+        (pageHeight - PAGE_PADDING * 2) / canvas.height
       );
       
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-      
+      const finalWidth = canvas.width * ratio;
+      const finalHeight = canvas.height * ratio;
       const x = (pageWidth - finalWidth) / 2;
       const y = (pageHeight - finalHeight) / 2;
 
-      debugLog('PDF dimensions', {
-        pageWidth,
-        pageHeight,
-        imgWidth,
-        imgHeight,
-        ratio,
-        finalWidth,
-        finalHeight,
-        x,
-        y
-      });
-
+      // Add image to PDF
       pdf.addImage(
         canvas.toDataURL('image/png', 1.0),
         'PNG',
@@ -993,141 +1095,49 @@ const handleExportPNG = async (filename) => {
 
       // Clean up
       document.body.removeChild(container);
-      debugLog(`Completed page ${i + 1}`);
     }
 
-    debugLog('Saving PDF');
-    pdf.save(`${filename}.pdf`);
-    debugLog('Export complete');
-  } catch (error) {
-    debugLog('Export error', error);
-    console.error('Export error:', error);
-    // Optionally show error to user
-    alert('Export failed. Check console for details.');
-  }
-};
-
-// Add generatePDF function before handleExportPNG
-const generatePDF = async () => {
-  try {
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'px',
-      format: 'a4',
-      hotfixes: ['px_scaling']
-    });
-
-    for (let i = 0; i < images.length; i++) {
-      // Create temporary container for rendering
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = '1200px';
-      document.body.appendChild(container);
-
-      // Render content
-      const content = document.createElement('div');
-      content.style.padding = '20px';
-      content.style.backgroundColor = 'white';
-      container.appendChild(content);
-
-      // Add image
-      const img = new Image();
-      img.src = images[i].src;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      
-      const imgWrapper = document.createElement('div');
-      imgWrapper.style.position = 'relative';
-      imgWrapper.appendChild(img);
-      content.appendChild(imgWrapper);
-
-      // Add annotations
-      const imageAnnotations = annotations[images[i].id] || [];
-      const annotationsLayer = document.createElement('div');
-      annotationsLayer.style.position = 'absolute';
-      annotationsLayer.style.top = '0';
-      annotationsLayer.style.left = '0';
-      annotationsLayer.style.width = '100%';
-      annotationsLayer.style.height = '100%';
-      imgWrapper.appendChild(annotationsLayer);
-
-      imageAnnotations.forEach(ann => {
-        const marker = document.createElement('div');
-        marker.style.position = 'absolute';
-        marker.style.left = `${(ann.x / img.naturalWidth) * 100}%`;
-        marker.style.top = `${(ann.y / img.naturalHeight) * 100}%`;
-        marker.style.transform = 'translate(-50%, -50%)';
-        
-        const dot = document.createElement('div');
-        dot.style.width = '24px';
-        dot.style.height = '24px';
-        dot.style.borderRadius = '50%';
-        dot.style.backgroundColor = ann.completed ? '#22c55e' : '#3b82f6';
-        dot.style.color = 'white';
-        dot.style.display = 'flex';
-        dot.style.alignItems = 'center';
-        dot.style.justifyContent = 'center';
-        dot.style.fontSize = '14px';
-        dot.style.border = '2px solid white';
-        dot.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-        dot.innerHTML = ann.completed ? '✓' : '!';
-        
-        marker.appendChild(dot);
-        annotationsLayer.appendChild(marker);
-      });
-
-      // Capture the page
-      const canvas = await html2canvas(container, {
-        backgroundColor: 'white',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-
-      // Add to PDF
-      if (i > 0) {
-        pdf.addPage();
-      }
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      
-      const ratio = Math.min(
-        (pageWidth - 40) / imgWidth,
-        (pageHeight - 40) / imgHeight
-      );
-      
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-      
-      const x = (pageWidth - finalWidth) / 2;
-      const y = (pageHeight - finalHeight) / 2;
-
-      pdf.addImage(
-        canvas.toDataURL('image/png'),
-        'PNG',
-        x,
-        y,
-        finalWidth,
-        finalHeight
-      );
-
-      // Clean up
-      document.body.removeChild(container);
-    }
-
-    // Return blob for sharing
     return pdf.output('blob');
   } catch (error) {
     console.error('PDF generation failed:', error);
     throw error;
   }
 };
+
+// Add utility functions for line calculations
+const calculateIntersectionPoint = (boxRect, markerX, markerY) => {
+  const centerX = boxRect.left + boxRect.width / 2;
+  const centerY = boxRect.top + boxRect.height / 2;
+  
+  // Calculate angle between centers
+  const angle = Math.atan2(centerY - markerY, centerX - markerX);
+  
+  // Box dimensions
+  const w = boxRect.width / 2;
+  const h = boxRect.height / 2;
+  
+  // Calculate intersection point
+  let x, y;
+  const absAngle = Math.abs(angle);
+  
+  if (absAngle < Math.atan2(h, w)) {
+    // Intersects with left/right side
+    x = w * Math.sign(Math.cos(angle));
+    y = w * Math.tan(angle);
+  } else {
+    // Intersects with top/bottom side
+    x = h / Math.tan(absAngle) * Math.sign(Math.cos(angle));
+    y = h * Math.sign(Math.sin(angle));
+  }
+  
+  return {
+    x: centerX + x,
+    y: centerY + y
+  };
+};
+
+// Update the generatePDF function with improved line handling
+
 
   const currentAnnotations = images[currentImageIndex]
     ? annotations[images[currentImageIndex].id] || []
@@ -1152,106 +1162,78 @@ const generatePDF = async () => {
   };
 
   // Add share handler
-  const handleShare = async () => {
-    if (!navigator?.share) {
-      setClipboardFeedback('Sharing not supported on this device');
-      setTimeout(() => setClipboardFeedback(null), 2000);
-      return;
-    }
-
+  const handleShare = async (format = 'pdf') => {
     try {
-      const shareData = {
+      let shareData = {
         title: 'PLSFIX Annotations',
         text: 'Check out my annotations!',
         url: window.location.href
       };
 
-      // Try to create PDF for sharing if supported
-      if (navigator.canShare) {
-        try {
-          const blob = await generatePDF();
-          const file = new File([blob], 'annotations.pdf', { type: 'application/pdf' });
-          if (navigator.canShare({ files: [file] })) {
-            shareData.files = [file];
-          }
-        } catch (err) {
-          console.log('File sharing not supported, falling back to link sharing');
+      if (format === 'pdf') {
+        const blob = await generatePDF();
+        const file = new File([blob], 'annotations.pdf', { type: 'application/pdf' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          shareData.files = [file];
+        } else {
+          // Fallback to downloading the file if sharing not supported
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'annotations.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setClipboardFeedback('Downloaded PDF (sharing not supported)');
+          setTimeout(() => setClipboardFeedback(null), 2000);
+          return;
         }
+      } else if (format === 'html') {
+        const html = generateExportableHtml();
+        // Create a temporary URL for the HTML content
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        shareData.url = url;
       }
 
-      await navigator.share(shareData);
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setClipboardFeedback('Shared successfully!');
+      } else {
+        // Fallback for browsers without Web Share API
+        await navigator.clipboard.writeText(shareData.url);
+        setClipboardFeedback('Link copied to clipboard!');
+      }
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error('Share failed:', error);
         setClipboardFeedback('Share failed - ' + error.message);
-        setTimeout(() => setClipboardFeedback(null), 2000);
       }
+    } finally {
+      setTimeout(() => setClipboardFeedback(null), 2000);
+      setShowExportDialog({ visible: false, type: null });
     }
-    setShowExportDialog({ visible: false });
+  };
+  const handleExportPNG = async (filename) => {
+    try {
+      const blob = await generatePDF();
+      const pdf = new Blob([blob], { type: 'application/pdf' });
+      const url = URL.createObjectURL(pdf);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
-// Replace handleCopyToClipboard with this updated version
-const handleCopyToClipboard = async () => {
-  try {
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.width = '1200px';
-    container.style.backgroundColor = 'white';
-    document.body.appendChild(container);
-
-    // Rest of container setup...
-    // ...existing code...
-
-    // Capture as canvas
-    const canvas = await html2canvas(container, {
-      backgroundColor: 'white',
-      scale: 2,
-      useCORS: true,
-      allowTaint: true
-    });
-
-    try {
-      // Try modern clipboard API first
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      const clipboardItem = new ClipboardItem({ 'image/png': blob });
-      await navigator.clipboard.write([clipboardItem]);
-    } catch (clipError) {
-      console.log('Modern clipboard API failed, trying fallback...', clipError);
-      
-      // Fallback for mobile: Create temporary link
-      const dataUrl = canvas.toDataURL('image/png');
-      
-      // Create temporary elements
-      const tempLink = document.createElement('a');
-      tempLink.href = dataUrl;
-      tempLink.download = 'annotation.png';
-      
-      // Add message for mobile users
-      setClipboardFeedback('Downloading image...');
-      
-      // Trigger download
-      document.body.appendChild(tempLink);
-      tempLink.click();
-      document.body.removeChild(tempLink);
-      
-      setClipboardFeedback('Image downloaded');
-    }
-    
-    // Clean up
-    document.body.removeChild(container);
-    
-    if (!clipboardFeedback) {
-      setClipboardFeedback('Copied to clipboard!');
-    }
-    setTimeout(() => setClipboardFeedback(null), 2000);
-  } catch (error) {
-    console.error('Copy failed:', error);
-    setClipboardFeedback('Copy failed');
-    setTimeout(() => setClipboardFeedback(null), 2000);
-  }
-  setShowExportDialog({ visible: false });
-};
 
   // Update the backdrop click handler
   const handleBackdropClick = (e) => {
@@ -1265,6 +1247,17 @@ const handleCopyToClipboard = async () => {
   // Update toolbar buttons - remove copy button
 const exportButtons = (
   <div className="flex items-center justify-end gap-2">
+    {canShare && (
+      <Button
+        onClick={() => setShowExportDialog({ visible: true, type: 'share' })}
+        variant="outline"
+        className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2"
+      >
+        <Share2 className="w-4 h-4" />
+        <span className="hidden md:inline">Share</span>
+        <span className="md:hidden">Share</span>
+      </Button>
+    )}
     <Button
       onClick={() => handleExportClick('export')}
       variant="outline"
@@ -1287,6 +1280,7 @@ const exportButtons = (
           defaultName={`annotation-${currentImageIndex + 1}`}
           onShare={handleShare}
           canShare={canShare}
+          type={showExportDialog.type}  // Add this line
         />
       )}
 

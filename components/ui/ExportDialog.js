@@ -1,7 +1,44 @@
 import { Button } from '@/components/ui/button';
-import { X, Share2, Download } from 'lucide-react';
+import { X, Share2, Download, Copy } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare }) => {
+const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type }) => {
+  const [shareFormat, setShareFormat] = useState('pdf');
+  const [canShareFiles, setCanShareFiles] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const checkFileSharing = async () => {
+      try {
+        if (navigator.canShare) {
+          const testFile = new File([""], "test.pdf", { type: "application/pdf" });
+          setCanShareFiles(await navigator.canShare({ files: [testFile] }));
+        }
+      } catch {
+        setCanShareFiles(false);
+      }
+    };
+    checkFileSharing();
+  }, []);
+
+  const handleShare = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await onShare(shareFormat);
+      onClose();
+    } catch (err) {
+      setError(err.message === 'AbortError' ? 
+        'Share cancelled' : 
+        'Failed to generate PDF with annotations'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 relative">
@@ -12,56 +49,101 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare }) => 
           <X className="w-4 h-4" />
         </button>
         
-        <h2 className="text-xl font-semibold mb-4">Export Options</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {type === 'share' ? 'Share Options' : 'Export Options'}
+        </h2>
         
-        {/* Share Button - with better visibility check */}
-        {typeof window !== 'undefined' && canShare && (
-          <Button
-            onClick={onShare}
-            className="w-full mb-4 gap-2"
-            variant="outline"
-          >
-            <Share2 className="w-4 h-4" />
-            Share{navigator.canShare?.({ files: [] }) ? ' as PDF' : ' Link'}
-          </Button>
-        )}
-
-        {/* Export Form */}
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Export Format
-            </label>
+        {type === 'share' && (
+          <div className="space-y-4">
             <div className="flex flex-col gap-2">
-              <input
-                type="text"
-                id="filename"
-                name="filename"
-                defaultValue={defaultName}
-                required
-                className="w-full px-3 py-2 border rounded-lg"
-                placeholder="Enter filename"
-              />
+              <label className="block text-sm font-medium text-gray-700">
+                Share Format
+              </label>
               <select
-                name="format"
+                value={shareFormat}
+                onChange={(e) => setShareFormat(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg"
-                defaultValue="pdf"
               >
-                <option value="pdf">PDF Document (with annotations)</option>
-                <option value="html">HTML (interactive)</option>
+                <option value="pdf">PDF Document</option>
+                {!canShareFiles && <option value="html">Interactive HTML</option>}
               </select>
             </div>
+
+            {error && (
+              <div className="text-red-500 text-sm">{error}</div>
+            )}
+
+            {isLoading && (
+              <div className="text-sm text-blue-600">
+                Preparing document with annotations...
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              {canShare && (
+                <Button
+                  onClick={handleShare}
+                  className="w-full gap-2"
+                  variant="outline"
+                  disabled={isLoading}
+                >
+                  <Share2 className="w-4 h-4" />
+                  {isLoading ? 'Preparing...' : 'Share'}
+                </Button>
+              )}
+              
+              {!canShare && (
+                <Button
+                  onClick={handleShare}
+                  className="w-full gap-2"
+                  variant="outline"
+                  disabled={isLoading}
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy Link
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
-          </div>
-        </form>
+        )}
+
+        {type === 'export' && (
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Export Format
+              </label>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  id="filename"
+                  name="filename"
+                  defaultValue={defaultName}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Enter filename"
+                />
+                <select
+                  name="format"
+                  className="w-full px-3 py-2 border rounded-lg"
+                  defaultValue="pdf"
+                >
+                  <option value="pdf">PDF Document (with annotations)</option>
+                  <option value="html">HTML (interactive)</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
