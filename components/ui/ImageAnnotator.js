@@ -409,25 +409,29 @@ const getRelativeCoordinates = (clientX, clientY) => {
   };
 
   const toggleCompletion = (id, e) => {
-    e.stopPropagation();
+    e.preventDefault(); // Prevent default touch behavior
+    e.stopPropagation(); // Stop event from bubbling up
     const currentImageId = images[currentImageIndex].id;
     setAnnotations(prev => ({
       ...prev,
       [currentImageId]: prev[currentImageId].map(ann =>
-        ann.id === id ? { ...ann.completed, completed: !ann.completed } : ann
+        ann.id === id ? { ...ann, completed: !ann.completed } : ann
       )
     }));
+    setSelectedAnnotation(null); // Close popup after action
   };
 
-  const deleteAnnotation = (id, e) => {
-    e.stopPropagation();
-    const currentImageId = images[currentImageIndex].id;
-    setAnnotations(prev => ({
-      ...prev,
-      [currentImageId]: prev[currentImageId].filter(ann => ann.id !== id)
-    }));
-    setSelectedAnnotation(null);
-  };
+// Modify the deleteAnnotation function:
+const deleteAnnotation = (id, e) => {
+  e.preventDefault(); // Prevent default touch behavior
+  e.stopPropagation(); // Stop event from bubbling up
+  const currentImageId = images[currentImageIndex].id;
+  setAnnotations(prev => ({
+    ...prev,
+    [currentImageId]: prev[currentImageId].filter(ann => ann.id !== id)
+  }));
+  setSelectedAnnotation(null); // Close popup after action
+};
 
   // Update generateExportableHtml to use absolute positioning
 const generateExportableHtml = () => {
@@ -486,6 +490,10 @@ const generateExportableHtml = () => {
       <title>PLSFIX-THX Annotation</title>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+      <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+      <link rel="manifest" href="/site.webmanifest" />
       <style>
         * {
           -webkit-tap-highlight-color: transparent;
@@ -1495,28 +1503,32 @@ const exportButtons = (
             left: '50%',
             transform: 'translateX(-50%)',
             border: '1px solid #e5e7eb',
+            touchAction: 'none', // Add this line
           }}
         >
           <p className="mb-4 text-sm text-gray-700 break-words">{annotation.note}</p>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => toggleCompletion(annotation.id, e)}
-              className="flex-1 h-9 text-sm"
-            >
-              <Check className="w-4 h-4 mr-1" />
-              {annotation.completed ? 'Undo' : 'Complete'}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => deleteAnnotation(annotation.id, e)}
-              className="flex-1 h-9 text-sm"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Delete
-            </Button>
+          <Button
+  size="sm"
+  variant="outline"
+  onClick={(e) => toggleCompletion(annotation.id, e)}
+  onTouchEnd={(e) => toggleCompletion(annotation.id, e)} // Add touch handler
+  className="flex-1 h-9 text-sm"
+>
+  <Check className="w-4 h-4 mr-1" />
+  {annotation.completed ? 'Undo' : 'Complete'}
+</Button>
+
+<Button
+  size="sm"
+  variant="outline"
+  onClick={(e) => deleteAnnotation(annotation.id, e)}
+  onTouchEnd={(e) => deleteAnnotation(annotation.id, e)} // Add touch handler
+  className="flex-1 h-9 text-sm"
+>
+  <X className="w-4 h-4 mr-1" />
+  Delete
+</Button>
           </div>
         </div>
       )}
