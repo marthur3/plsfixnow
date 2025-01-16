@@ -653,7 +653,7 @@ const generateExportableHtml = () => {
           </a>
            by 
           <a 
-            href="https://www.linkedin.com/in/michael-arthur" 
+            href="https://www.github.com/michaelarthur" 
             target="_blank" 
             rel="noopener noreferrer"
             style="color: #3b82f6; text-decoration: none;"
@@ -1517,7 +1517,7 @@ const exportButtons = (
   <p className="text-sm text-gray-500">
     Created by{" "}
     <a 
-      href="https://www.linkedin.com/in/michael-bradford-arthur/" 
+      href="https://github.com/marthur3" 
       target="_blank" 
       rel="noopener noreferrer"
       className="text-blue-500 hover:text-blue-700 transition-colors"
