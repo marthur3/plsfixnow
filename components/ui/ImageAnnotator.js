@@ -804,7 +804,10 @@ const generatePDF = async () => {
     });
 
     const PAGE_MARGIN = 40;
-    const ICON_SIZE = 24;
+    const ICON_SIZE = 32; // Increased from 24
+    
+    // Set default font size larger
+    pdf.setFontSize(14); // Increased base font size
 
     for (let i = 0; i < images.length; i++) {
       const container = document.createElement('div');
@@ -933,8 +936,8 @@ const generatePDF = async () => {
         line.setAttribute('x2', noteX);
         line.setAttribute('y2', noteY);
         line.setAttribute('stroke', annotation.completed ? '#22c55e' : '#3b82f6');
-        line.setAttribute('stroke-width', '4'); // Increased for visibility
-        line.setAttribute('opacity', '1'); // Full opacity for testing
+        line.setAttribute('stroke-width', '5'); // Increased line width
+        line.setAttribute('opacity', '0.9'); // Slightly increased opacity
         svg.appendChild(line);
         
         console.log('Line created and appended');
@@ -950,14 +953,14 @@ const generatePDF = async () => {
           transform: translate(-50%, -50%) scale(0.75);
           background: ${annotation.completed ? '#22c55e' : '#3b82f6'};
           border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: 3px solid white; // Thicker border
+          box-shadow: 0 4px 6px rgba(0,0,0,0.2);
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: bold;
-          font-size: 16px;
+          font-size: 20px; // Increased font size
           z-index: 2;
           pointer-events: none;
           -webkit-font-smoothing: antialiased;
@@ -973,15 +976,17 @@ const generatePDF = async () => {
           top: ${noteYPercent}%;
           transform: translate(-50%, -50%);
           background: white;
-          padding: 12px;
-          border-radius: 6px;
-          border: 1px solid ${annotation.completed ? '#22c55e' : '#3b82f6'};
-          max-width: ${annotation.note.length > TEXT_LENGTH_THRESHOLD ? '300px' : '200px'};
-          min-width: 120px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          padding: 16px; // Increased padding
+          border-radius: 8px;
+          border: 2px solid ${annotation.completed ? '#22c55e' : '#3b82f6'}; // Thicker border
+          max-width: ${annotation.note.length > TEXT_LENGTH_THRESHOLD ? '400px' : '300px'}; // Increased width
+          min-width: 160px; // Increased min-width
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           z-index: 1;
-          font-size: 12px;
-          line-height: 1.4;
+          font-size: 16px; // Increased font size
+          line-height: 1.5; // Increased line height
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          color: #1f2937; // Darker text for better contrast
           word-break: break-word;
           white-space: pre-wrap;
         `;
