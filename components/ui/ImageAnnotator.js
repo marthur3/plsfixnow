@@ -795,7 +795,6 @@ const handleExportSubmit = async (e) => {
 
 // Add generatePDF function before handleExportPNG
 // Optimized PDF generation function with improved icon and text handling
-// Optimized PDF generation function with improved icon and text handling
 const generatePDF = async () => {
   try {
     const pdf = new jsPDF({
@@ -827,75 +826,146 @@ const generatePDF = async () => {
       await new Promise(resolve => { img.onload = resolve; });
       imageContainer.appendChild(img);
 
+      // Create SVG layer for lines with proper viewBox
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible;
+      `;
+      
+      // Set viewBox to match image dimensions
+      svg.setAttribute('viewBox', `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      
+      // Add debug outline to see SVG boundaries
+      const debugRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      debugRect.setAttribute('width', '100%');
+      debugRect.setAttribute('height', '100%');
+      debugRect.setAttribute('fill', 'none');
+      debugRect.setAttribute('stroke', 'red');
+      debugRect.setAttribute('stroke-width', '1');
+      svg.appendChild(debugRect);
+      
+      imageContainer.appendChild(svg);
+      console.log('SVG created with viewBox:', `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
+
       // Process annotations
       const imageAnnotations = annotations[images[i].id] || [];
       const sortedAnnotations = [...imageAnnotations].sort((a, b) => a.y - b.y);
 
       sortedAnnotations.forEach((annotation, index) => {
-        // Calculate position relative to natural image dimensions
-        const xPercent = (annotation.x / img.naturalWidth) * 100;
-        const yPercent = (annotation.y / img.naturalHeight) * 100;
+        const imageWidth = img.naturalWidth;
+        const imageHeight = img.naturalHeight;
+        const xPercent = (annotation.x / imageWidth) * 100;
+        const yPercent = (annotation.y / imageHeight) * 100;
 
-        // Create icon with fixed size and percentage-based positioning
-const icon = document.createElement('div');
-icon.style.cssText = `
-  position: absolute;
-  left: ${xPercent}%;
-  top: ${yPercent}%;
-  width: ${ICON_SIZE}px;
-  height: ${ICON_SIZE}px;
-  transform: translate(-50%, -50%) scale(0.75); /* Adjusted transform with slight scale down */
-  background: ${annotation.completed ? '#22c55e' : '#3b82f6'};
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 16px; /* Slightly larger font size */
-  z-index: 2;
-  pointer-events: none; /* Prevent any potential interference */
-  -webkit-font-smoothing: antialiased; /* Smoother text rendering */
-`;
-        icon.innerHTML = annotation.completed ? '✓' : '!';
+        // Enhanced offset calculation based on text length and index
+        const BASE_OFFSET = 240; // Increased from 180
+        const VERTICAL_SPACING = 120; // Increased from 80
+        const TEXT_LENGTH_THRESHOLD = 50;
         
-        // Enhanced note position calculation
-        const centerX = img.naturalWidth / 2;
-        const centerY = img.naturalHeight / 2;
+        // Calculate additional offset based on text length
+        const textLength = annotation.note.length;
+        const lengthMultiplier = textLength > TEXT_LENGTH_THRESHOLD ? 1.5 : 1;
         
-        // Calculate base offset direction
-        let offsetX = annotation.x > centerX ? -120 : 120;
-        let offsetY = annotation.y > centerY ? -40 : 40;
+        // Calculate base offset direction based on quadrant
+        let offsetX = annotation.x > (imageWidth / 2) ? -BASE_OFFSET : BASE_OFFSET;
+        let offsetY = 0;
         
-        // Alternate between different positions based on index to avoid overlap
-        switch (index % 4) {
-          case 0: // Right
-            offsetX = Math.abs(offsetX);
-            offsetY = -20;
+        // Distribute positions in a wider pattern for longer text
+        switch (index % 8) { // Increased positions from 6 to 8
+          case 0: // Far right
+            offsetX = Math.abs(offsetX) * lengthMultiplier;
+            offsetY = -VERTICAL_SPACING;
             break;
-          case 1: // Left
-            offsetX = -Math.abs(offsetX);
-            offsetY = 20;
+          case 1: // Far left
+            offsetX = -Math.abs(offsetX) * lengthMultiplier;
+            offsetY = VERTICAL_SPACING;
             break;
-          case 2: // Top
-            offsetX = 0;
-            offsetY = -Math.abs(offsetY) - 40;
+          case 2: // Mid right high
+            offsetX = Math.abs(offsetX) * 0.7 * lengthMultiplier;
+            offsetY = -VERTICAL_SPACING * 2;
             break;
-          case 3: // Bottom
-            offsetX = 0;
-            offsetY = Math.abs(offsetY) + 40;
+          case 3: // Mid left high
+            offsetX = -Math.abs(offsetX) * 0.7 * lengthMultiplier;
+            offsetY = -VERTICAL_SPACING * 1.5;
+            break;
+          case 4: // Mid right low
+            offsetX = Math.abs(offsetX) * 0.7 * lengthMultiplier;
+            offsetY = VERTICAL_SPACING * 1.5;
+            break;
+          case 5: // Mid left low
+            offsetX = -Math.abs(offsetX) * 0.7 * lengthMultiplier;
+            offsetY = VERTICAL_SPACING * 2;
+            break;
+          case 6: // Near right
+            offsetX = Math.abs(offsetX) * 0.4 * lengthMultiplier;
+            offsetY = 0;
+            break;
+          case 7: // Near left
+            offsetX = -Math.abs(offsetX) * 0.4 * lengthMultiplier;
+            offsetY = 0;
             break;
         }
         
         const noteX = annotation.x + offsetX;
         const noteY = annotation.y + offsetY;
         
-        // Create note box with percentage-based positioning
-        const noteXPercent = (noteX / img.naturalWidth) * 100;
-        const noteYPercent = (noteY / img.naturalHeight) * 100;
+        const noteXPercent = (noteX / imageWidth) * 100;
+        const noteYPercent = (noteY / imageHeight) * 100;
+
+        // Debug line creation
+        console.log('Creating line with coordinates:', {
+          x1: annotation.x,
+          y1: annotation.y,
+          x2: noteX,
+          y2: noteY
+        });
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', annotation.x);
+        line.setAttribute('y1', annotation.y);
+        line.setAttribute('x2', noteX);
+        line.setAttribute('y2', noteY);
+        line.setAttribute('stroke', annotation.completed ? '#22c55e' : '#3b82f6');
+        line.setAttribute('stroke-width', '4'); // Increased for visibility
+        line.setAttribute('opacity', '1'); // Full opacity for testing
+        svg.appendChild(line);
         
+        console.log('Line created and appended');
+
+        // Create icon
+        const icon = document.createElement('div');
+        icon.style.cssText = `
+          position: absolute;
+          left: ${xPercent}%;
+          top: ${yPercent}%;
+          width: ${ICON_SIZE}px;
+          height: ${ICON_SIZE}px;
+          transform: translate(-50%, -50%) scale(0.75);
+          background: ${annotation.completed ? '#22c55e' : '#3b82f6'};
+          border-radius: 50%;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 16px;
+          z-index: 2;
+          pointer-events: none;
+          -webkit-font-smoothing: antialiased;
+        `;
+        icon.innerHTML = annotation.completed ? '✓' : '!';
+
+        // Create note box
+        // Create note box with improved text handling
         const noteBox = document.createElement('div');
         noteBox.style.cssText = `
           position: absolute;
@@ -906,12 +976,14 @@ icon.style.cssText = `
           padding: 12px;
           border-radius: 6px;
           border: 1px solid ${annotation.completed ? '#22c55e' : '#3b82f6'};
-          max-width: 200px;
+          max-width: ${annotation.note.length > TEXT_LENGTH_THRESHOLD ? '300px' : '200px'};
+          min-width: 120px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           z-index: 1;
           font-size: 12px;
           line-height: 1.4;
           word-break: break-word;
+          white-space: pre-wrap;
         `;
         noteBox.textContent = annotation.note;
 
@@ -930,12 +1002,10 @@ icon.style.cssText = `
         logging: false
       });
 
-      // Add new page for all pages except the first
       if (i > 0) {
         pdf.addPage();
       }
 
-      // Calculate dimensions to fit page
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const ratio = Math.min(
@@ -948,7 +1018,6 @@ icon.style.cssText = `
       const x = (pageWidth - finalWidth) / 2;
       const y = (pageHeight - finalHeight) / 2;
 
-      // Add image to PDF with fast rendering
       pdf.addImage(
         canvas.toDataURL('image/png'),
         'PNG',
