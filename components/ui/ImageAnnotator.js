@@ -794,281 +794,140 @@ const handleExportSubmit = async (e) => {
 
 
 // Add generatePDF function before handleExportPNG
+// Optimized PDF generation function with improved icon and text handling
+// Optimized PDF generation function with improved icon and text handling
 const generatePDF = async () => {
   try {
-    // Initialize PDF with optimal settings
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'px',
-      format: 'a4',
-      hotfixes: ['px_scaling']
+      format: 'a4'
     });
 
-    // Define layout constants
-    const PAGE_PADDING = 40;
-    const NOTE_PADDING = 12;
-    const MIN_FONT_SIZE = 12;
-    const NOTE_MAX_WIDTH = 200;
-    const NOTE_MARGIN = 20;
-    const MARKER_SIZE = 24;
-
-    // Helper function for collision detection
-    const checkCollision = (notes, newNote) => {
-      return notes.some(note => {
-        const dx = note.x - newNote.x;
-        const dy = note.y - newNote.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        return distance < NOTE_MARGIN * 3; // Increased margin for better spacing
-      });
-    };
-
-    // Helper function for finding valid note positions
-    const findValidPosition = (notes, baseX, baseY, index, imageWidth, imageHeight) => {
-      let bestPosition = null;
-      let minDistanceToEdge = 0;
-      
-      // Try different angles and distances
-      for (let distance = NOTE_MARGIN * 2; distance <= NOTE_MARGIN * 4; distance += NOTE_MARGIN) {
-        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
-          const x = baseX + distance * Math.cos(angle);
-          const y = baseY + distance * Math.sin(angle);
-          
-          // Check if position is within image bounds with padding
-          if (x < NOTE_MARGIN || x > imageWidth - NOTE_MARGIN || 
-              y < NOTE_MARGIN || y > imageHeight - NOTE_MARGIN) {
-            continue;
-          }
-          
-          const position = { x, y };
-          
-          if (!checkCollision(notes, position)) {
-            const distanceToEdge = Math.min(
-              x, y, imageWidth - x, imageHeight - y
-            );
-            
-            if (!bestPosition || distanceToEdge > minDistanceToEdge) {
-              bestPosition = position;
-              minDistanceToEdge = distanceToEdge;
-            }
-          }
-        }
-        
-        if (bestPosition) break;
-      }
-      
-      // Fallback if no valid position found
-      return bestPosition || {
-        x: baseX + NOTE_MARGIN * 2,
-        y: baseY + NOTE_MARGIN * 2
-      };
-    };
+    const PAGE_MARGIN = 40;
+    const ICON_SIZE = 24;
 
     for (let i = 0; i < images.length; i++) {
-      // Create temporary container for each page
       const container = document.createElement('div');
       container.style.cssText = `
         position: fixed;
         left: -9999px;
-        top: 0;
         width: 1200px;
-        background-color: white;
-        padding: ${PAGE_PADDING}px;
+        background: white;
+        padding: ${PAGE_MARGIN}px;
       `;
       document.body.appendChild(container);
 
-      // Setup page content
-      const content = document.createElement('div');
-      content.style.cssText = `
-        position: relative;
-        width: 100%;
-        background-color: white;
-      `;
-      container.appendChild(content);
+      const imageContainer = document.createElement('div');
+      imageContainer.style.cssText = 'position: relative; width: fit-content; margin: 0 auto;';
 
-      // Add page header
-      const header = document.createElement('h2');
-      header.style.cssText = `
-        font-size: 24px;
-        margin-bottom: 16px;
-        color: #374151;
-        font-weight: 600;
-      `;
-      header.textContent = `Page ${i + 1}`;
-      content.appendChild(header);
-
-      // Add image
+      // Add the image
       const img = new Image();
       img.src = images[i].src;
       await new Promise(resolve => { img.onload = resolve; });
-      
-      const imgWrapper = document.createElement('div');
-      imgWrapper.style.cssText = `
-        position: relative;
-        width: fit-content;
-        margin: 0 auto;
-      `;
-      imgWrapper.appendChild(img);
-      content.appendChild(imgWrapper);
-
-      // Create SVG layer for improved line rendering
-      const svgLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svgLayer.setAttribute('width', '100%');
-      svgLayer.setAttribute('height', '100%');
-      svgLayer.setAttribute('viewBox', `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
-      svgLayer.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-      svgLayer.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 1;
-      `;
-      imgWrapper.appendChild(svgLayer);
+      imageContainer.appendChild(img);
 
       // Process annotations
       const imageAnnotations = annotations[images[i].id] || [];
-      const processedNotes = [];
-      
-      // Sort annotations by y-position for better layout
       const sortedAnnotations = [...imageAnnotations].sort((a, b) => a.y - b.y);
 
-      sortedAnnotations.forEach((ann, index) => {
-        // Calculate marker position in pixels
-        const xPos = ann.x;
-        const yPos = ann.y;
+      sortedAnnotations.forEach((annotation, index) => {
+        // Calculate position relative to natural image dimensions
+        const xPercent = (annotation.x / img.naturalWidth) * 100;
+        const yPercent = (annotation.y / img.naturalHeight) * 100;
 
-        // Create marker
-        const marker = document.createElement('div');
-        marker.style.cssText = `
-          position: absolute;
-          left: ${(xPos / img.naturalWidth) * 100}%;
-          top: ${(yPos / img.naturalHeight) * 100}%;
-          transform: translate(-50%, -50%);
-          z-index: 3;
-        `;
-
-        // Create marker dot
-        const dot = document.createElement('div');
-        dot.style.cssText = `
-          width: ${MARKER_SIZE}px;
-          height: ${MARKER_SIZE}px;
-          border-radius: 50%;
-          background-color: ${ann.completed ? '#22c55e' : '#3b82f6'};
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-center: center;
-          font-size: ${MIN_FONT_SIZE}px;
-          font-weight: bold;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        `;
-        dot.innerHTML = `<span style="transform: translateY(-1px)">${ann.completed ? '✓' : '!'}</span>`;
-        marker.appendChild(dot);
-
-        // Calculate note position with collision avoidance
-        const notePosition = findValidPosition(
-          processedNotes,
-          xPos,
-          yPos,
-          index,
-          img.naturalWidth,
-          img.naturalHeight
-        );
-
-        // Create curved connector line
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        // Create icon with fixed size and percentage-based positioning
+const icon = document.createElement('div');
+icon.style.cssText = `
+  position: absolute;
+  left: ${xPercent}%;
+  top: ${yPercent}%;
+  width: ${ICON_SIZE}px;
+  height: ${ICON_SIZE}px;
+  transform: translate(-50%, -50%) scale(0.75); /* Adjusted transform with slight scale down */
+  background: ${annotation.completed ? '#22c55e' : '#3b82f6'};
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px; /* Slightly larger font size */
+  z-index: 2;
+  pointer-events: none; /* Prevent any potential interference */
+  -webkit-font-smoothing: antialiased; /* Smoother text rendering */
+`;
+        icon.innerHTML = annotation.completed ? '✓' : '!';
         
-        // Calculate control points for smooth curve
-        const midX = (xPos + notePosition.x) / 2;
-        const offset = 30; // Curve offset
-        const sign = notePosition.y < yPos ? -1 : 1;
+        // Enhanced note position calculation
+        const centerX = img.naturalWidth / 2;
+        const centerY = img.naturalHeight / 2;
         
-        const pathStr = `
-          M ${xPos} ${yPos}
-          C ${midX} ${yPos + offset * sign},
-            ${midX} ${notePosition.y - offset * sign},
-            ${notePosition.x} ${notePosition.y}
-        `;
-
-        // Background path (white shadow)
-        const bgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        bgPath.setAttribute('d', pathStr);
-        bgPath.setAttribute('fill', 'none');
-        bgPath.setAttribute('stroke', 'white');
-        bgPath.setAttribute('stroke-width', '4');
-        bgPath.setAttribute('stroke-linecap', 'round');
-
-        // Foreground path (colored line)
-        const fgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        fgPath.setAttribute('d', pathStr);
-        fgPath.setAttribute('fill', 'none');
-        fgPath.setAttribute('stroke', ann.completed ? '#22c55e' : '#3b82f6');
-        fgPath.setAttribute('stroke-width', '2');
-        fgPath.setAttribute('stroke-linecap', 'round');
-        fgPath.setAttribute('stroke-dasharray', '6 4');
-
-        line.appendChild(bgPath);
-        line.appendChild(fgPath);
-        svgLayer.appendChild(line);
-
-        // Create note box with improved styling
+        // Calculate base offset direction
+        let offsetX = annotation.x > centerX ? -120 : 120;
+        let offsetY = annotation.y > centerY ? -40 : 40;
+        
+        // Alternate between different positions based on index to avoid overlap
+        switch (index % 4) {
+          case 0: // Right
+            offsetX = Math.abs(offsetX);
+            offsetY = -20;
+            break;
+          case 1: // Left
+            offsetX = -Math.abs(offsetX);
+            offsetY = 20;
+            break;
+          case 2: // Top
+            offsetX = 0;
+            offsetY = -Math.abs(offsetY) - 40;
+            break;
+          case 3: // Bottom
+            offsetX = 0;
+            offsetY = Math.abs(offsetY) + 40;
+            break;
+        }
+        
+        const noteX = annotation.x + offsetX;
+        const noteY = annotation.y + offsetY;
+        
+        // Create note box with percentage-based positioning
+        const noteXPercent = (noteX / img.naturalWidth) * 100;
+        const noteYPercent = (noteY / img.naturalHeight) * 100;
+        
         const noteBox = document.createElement('div');
         noteBox.style.cssText = `
           position: absolute;
-          top: ${(notePosition.y / img.naturalHeight) * 100}%;
-          left: ${(notePosition.x / img.naturalWidth) * 100}%;
+          left: ${noteXPercent}%;
+          top: ${noteYPercent}%;
           transform: translate(-50%, -50%);
-          background-color: white;
-          padding: ${NOTE_PADDING}px;
+          background: white;
+          padding: 12px;
           border-radius: 6px;
-          font-size: ${MIN_FONT_SIZE}px;
-          max-width: ${NOTE_MAX_WIDTH}px;
-          word-wrap: break-word;
-          border: ${ann.completed ? '1px solid #22c55e' : '1px solid #3b82f6'};
+          border: 1px solid ${annotation.completed ? '#22c55e' : '#3b82f6'};
+          max-width: 200px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          z-index: 2;
-          color: #374151;
+          z-index: 1;
+          font-size: 12px;
           line-height: 1.4;
+          word-break: break-word;
         `;
-        noteBox.textContent = ann.note;
-        
-        imgWrapper.appendChild(marker);
-        imgWrapper.appendChild(noteBox);
-        processedNotes.push(notePosition);
+        noteBox.textContent = annotation.note;
+
+        imageContainer.appendChild(icon);
+        imageContainer.appendChild(noteBox);
       });
 
-      // Add footer
-      const footer = document.createElement('div');
-      footer.style.cssText = `
-        text-align: center;
-        padding: 16px;
-        margin-top: 20px;
-        color: #6b7280;
-        font-size: 12px;
-      `;
-      footer.textContent = 'Created with PLSFIX-THX';
-      content.appendChild(footer);
+      container.appendChild(imageContainer);
 
-      // Capture page with html2canvas
+      // Capture the page
       const canvas = await html2canvas(container, {
-        backgroundColor: 'white',
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        logging: false,
-        onclone: (clonedDoc) => {
-          const elements = clonedDoc.querySelectorAll('svg, path, div');
-          elements.forEach(el => {
-            el.style.opacity = '1';
-            el.style.visibility = 'visible';
-          });
-        }
+        backgroundColor: 'white',
+        logging: false
       });
 
       // Add new page for all pages except the first
@@ -1080,8 +939,8 @@ const generatePDF = async () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const ratio = Math.min(
-        (pageWidth - PAGE_PADDING * 2) / canvas.width,
-        (pageHeight - PAGE_PADDING * 2) / canvas.height
+        (pageWidth - PAGE_MARGIN * 2) / canvas.width,
+        (pageHeight - PAGE_MARGIN * 2) / canvas.height
       );
       
       const finalWidth = canvas.width * ratio;
@@ -1089,9 +948,9 @@ const generatePDF = async () => {
       const x = (pageWidth - finalWidth) / 2;
       const y = (pageHeight - finalHeight) / 2;
 
-      // Add image to PDF
+      // Add image to PDF with fast rendering
       pdf.addImage(
-        canvas.toDataURL('image/png', 1.0),
+        canvas.toDataURL('image/png'),
         'PNG',
         x,
         y,
@@ -1101,7 +960,6 @@ const generatePDF = async () => {
         'FAST'
       );
 
-      // Clean up
       document.body.removeChild(container);
     }
 
@@ -1111,7 +969,6 @@ const generatePDF = async () => {
     throw error;
   }
 };
-
 // Add utility functions for line calculations
 const calculateIntersectionPoint = (boxRect, markerX, markerY) => {
   const centerX = boxRect.left + boxRect.width / 2;
@@ -1147,7 +1004,7 @@ const calculateIntersectionPoint = (boxRect, markerX, markerY) => {
 // Update the generatePDF function with improved line handling
 
 
-  const currentAnnotations = images[currentImageIndex]
+const currentAnnotations = images[currentImageIndex]
     ? annotations[images[currentImageIndex].id] || []
     : [];
 
@@ -1227,8 +1084,7 @@ const calculateIntersectionPoint = (boxRect, markerX, markerY) => {
   const handleExportPNG = async (filename) => {
     try {
       const blob = await generatePDF();
-      const pdf = new Blob([blob], { type: 'application/pdf' });
-      const url = URL.createObjectURL(pdf);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${filename}.pdf`;
