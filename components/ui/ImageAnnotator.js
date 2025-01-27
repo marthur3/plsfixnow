@@ -803,8 +803,10 @@ const generatePDF = async () => {
       format: 'a4'
     });
 
-    const PAGE_MARGIN = 40;
+    const PAGE_MARGIN = 60; // Increased from 40
     const ICON_SIZE = 32; // Increased from 24
+    const BOX_PADDING = 24; // Added padding for note boxes
+    const MIN_EDGE_DISTANCE = 100; // Minimum distance from edges
     
     // Set default font size larger
     pdf.setFontSize(14); // Increased base font size
@@ -868,8 +870,8 @@ const generatePDF = async () => {
         const yPercent = (annotation.y / imageHeight) * 100;
 
         // Enhanced offset calculation based on text length and index
-        const BASE_OFFSET = 240; // Increased from 180
-        const VERTICAL_SPACING = 120; // Increased from 80
+        const BASE_OFFSET = 280; // Increased from 240
+        const VERTICAL_SPACING = 140; // Increased from 120
         const TEXT_LENGTH_THRESHOLD = 50;
         
         // Calculate additional offset based on text length
