@@ -1,0 +1,23 @@
+export const PDF_CONSTANTS = {
+  PAGE_MARGIN: 60,
+  ICON_SIZE: 32,
+  BOX_PADDING: 16,
+  MIN_EDGE_DISTANCE: 80,
+  LEGEND_MARGIN: 40,
+  USE_NUMBERED_MARKERS_THRESHOLD: 5,
+  NOTE_BOX_WIDTH: 160,  // Reduced from 200
+  NOTE_BOX_SPACING: 30, // Reduced from 40
+  MIN_DISTANCE_BETWEEN_NOTES: 50,
+  DISTRIBUTION_RADIUS: 200,
+  SPIRAL_STEP: 30,
+  MAX_ATTEMPTS: 12,
+  ANNOTATIONS_PER_PAGE: 8,
+  PAGE_BOTTOM_MARGIN: 50,
+  ROW_HEIGHT: 24,
+  ANNOTATION_LINE_HEIGHT: 12,
+  MIN_SPACE_FOR_ANNOTATIONS: 200,
+  ANNOTATION_START_OFFSET: 60,  // Space between image and first annotation
+  ANNOTATION_HEADING_SIZE: 14,  // Font size for "Annotations" heading
+  ANNOTATION_HEADING_MARGIN: 20, // Space after heading
+  MAX_IMAGE_HEIGHT_RATIO: 0.6,  // Maximum portion of page height that image can occupy
+};

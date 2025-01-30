@@ -1,29 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon, Plus, Copy } from 'lucide-react';
+import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon, Plus, Copy, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Instructions from './Instructions';
-import html2canvas from 'html2canvas';
 import ExportDialog from './ExportDialog';
 // Add jsPDF import
 import { jsPDF } from 'jspdf';
 import { Analytics } from '@vercel/analytics/react';
 import { Share2 } from 'lucide-react';
+import { PDF_CONSTANTS } from '@/constants/pdf';
+import findOptimalPosition from '@/utils/position';
 
 
 
-const ImageAnnotator = () => {
-  const [images, setImages] = useState([]);  // Array of {id, src}
+export default function ImageAnnotator() {
+  // Image related state
+  const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [annotations, setAnnotations] = useState({});  // Map of imageId -> annotations
+  const [scale, setScale] = useState(1);
+  
+  // Annotation related state
+  const [annotations, setAnnotations] = useState([]);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  
+  // UI state
+  const [showExportDialog, setShowExportDialog] = useState({ visible: false, type: null });
+  const [showInstructions, setShowInstructions] = useState(false); // Changed from true to false
+  const [canShare, setCanShare] = useState(false);
+
   const [noteInput, setNoteInput] = useState({ visible: false, x: 0, y: 0 });
   const [noteText, setNoteText] = useState('');
   const [touchStartTime, setTouchStartTime] = useState(0);
   const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
   const [draggedAnnotation, setDraggedAnnotation] = useState(null);
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState({ visible: false, type: null });
   const imageRef = useRef(null);
   const popupRef = useRef(null);
   const noteInputRef = useRef(null);
@@ -42,9 +52,6 @@ const ImageAnnotator = () => {
 
   // Add new state for clipboard feedback
   const [clipboardFeedback, setClipboardFeedback] = useState(null);
-
-  // Add canShare detection
-  const [canShare, setCanShare] = useState(false);
   
   // Update canShare detection to check for files support
   const checkShareCapabilities = async () => {
@@ -795,248 +802,146 @@ const handleExportSubmit = async (e) => {
 
 // Add generatePDF function before handleExportPNG
 // Optimized PDF generation function with improved icon and text handling
+// Updated PDF generation with proper coordinate handling and multi-page support
 const generatePDF = async () => {
   try {
     const pdf = new jsPDF({
       orientation: 'portrait',
-      unit: 'px',
+      unit: 'pt',
       format: 'a4'
     });
 
-    const PAGE_MARGIN = 60; // Increased from 40
-    const ICON_SIZE = 32; // Increased from 24
-    const BOX_PADDING = 24; // Added padding for note boxes
-    const MIN_EDGE_DISTANCE = 100; // Minimum distance from edges
-    
-    // Set default font size larger
-    pdf.setFontSize(14); // Increased base font size
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 40;
+    const maxWidth = pageWidth - (margin * 2);
+
+    // Set default font settings
+    pdf.setFont('helvetica');
+    pdf.setFontSize(10);
 
     for (let i = 0; i < images.length; i++) {
-      const container = document.createElement('div');
-      container.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        width: 1200px;
-        background: white;
-        padding: ${PAGE_MARGIN}px;
-      `;
-      document.body.appendChild(container);
-
-      const imageContainer = document.createElement('div');
-      imageContainer.style.cssText = 'position: relative; width: fit-content; margin: 0 auto;';
-
-      // Add the image
-      const img = new Image();
-      img.src = images[i].src;
-      await new Promise(resolve => { img.onload = resolve; });
-      imageContainer.appendChild(img);
-
-      // Create SVG layer for lines with proper viewBox
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        overflow: visible;
-      `;
-      
-      // Set viewBox to match image dimensions
-      svg.setAttribute('viewBox', `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
-      svg.setAttribute('preserveAspectRatio', 'none');
-      
-      // Add debug outline to see SVG boundaries
-      const debugRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      debugRect.setAttribute('width', '100%');
-      debugRect.setAttribute('height', '100%');
-      debugRect.setAttribute('fill', 'none');
-      debugRect.setAttribute('stroke', 'red');
-      debugRect.setAttribute('stroke-width', '1');
-      svg.appendChild(debugRect);
-      
-      imageContainer.appendChild(svg);
-      console.log('SVG created with viewBox:', `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
-
-      // Process annotations
-      const imageAnnotations = annotations[images[i].id] || [];
-      const sortedAnnotations = [...imageAnnotations].sort((a, b) => a.y - b.y);
-
-      sortedAnnotations.forEach((annotation, index) => {
-        const imageWidth = img.naturalWidth;
-        const imageHeight = img.naturalHeight;
-        const xPercent = (annotation.x / imageWidth) * 100;
-        const yPercent = (annotation.y / imageHeight) * 100;
-
-        // Enhanced offset calculation based on text length and index
-        const BASE_OFFSET = 280; // Increased from 240
-        const VERTICAL_SPACING = 140; // Increased from 120
-        const TEXT_LENGTH_THRESHOLD = 50;
-        
-        // Calculate additional offset based on text length
-        const textLength = annotation.note.length;
-        const lengthMultiplier = textLength > TEXT_LENGTH_THRESHOLD ? 1.5 : 1;
-        
-        // Calculate base offset direction based on quadrant
-        let offsetX = annotation.x > (imageWidth / 2) ? -BASE_OFFSET : BASE_OFFSET;
-        let offsetY = 0;
-        
-        // Distribute positions in a wider pattern for longer text
-        switch (index % 8) { // Increased positions from 6 to 8
-          case 0: // Far right
-            offsetX = Math.abs(offsetX) * lengthMultiplier;
-            offsetY = -VERTICAL_SPACING;
-            break;
-          case 1: // Far left
-            offsetX = -Math.abs(offsetX) * lengthMultiplier;
-            offsetY = VERTICAL_SPACING;
-            break;
-          case 2: // Mid right high
-            offsetX = Math.abs(offsetX) * 0.7 * lengthMultiplier;
-            offsetY = -VERTICAL_SPACING * 2;
-            break;
-          case 3: // Mid left high
-            offsetX = -Math.abs(offsetX) * 0.7 * lengthMultiplier;
-            offsetY = -VERTICAL_SPACING * 1.5;
-            break;
-          case 4: // Mid right low
-            offsetX = Math.abs(offsetX) * 0.7 * lengthMultiplier;
-            offsetY = VERTICAL_SPACING * 1.5;
-            break;
-          case 5: // Mid left low
-            offsetX = -Math.abs(offsetX) * 0.7 * lengthMultiplier;
-            offsetY = VERTICAL_SPACING * 2;
-            break;
-          case 6: // Near right
-            offsetX = Math.abs(offsetX) * 0.4 * lengthMultiplier;
-            offsetY = 0;
-            break;
-          case 7: // Near left
-            offsetX = -Math.abs(offsetX) * 0.4 * lengthMultiplier;
-            offsetY = 0;
-            break;
-        }
-        
-        const noteX = annotation.x + offsetX;
-        const noteY = annotation.y + offsetY;
-        
-        const noteXPercent = (noteX / imageWidth) * 100;
-        const noteYPercent = (noteY / imageHeight) * 100;
-
-        // Debug line creation
-        console.log('Creating line with coordinates:', {
-          x1: annotation.x,
-          y1: annotation.y,
-          x2: noteX,
-          y2: noteY
-        });
-
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', annotation.x);
-        line.setAttribute('y1', annotation.y);
-        line.setAttribute('x2', noteX);
-        line.setAttribute('y2', noteY);
-        line.setAttribute('stroke', annotation.completed ? '#22c55e' : '#3b82f6');
-        line.setAttribute('stroke-width', '5'); // Increased line width
-        line.setAttribute('opacity', '0.9'); // Slightly increased opacity
-        svg.appendChild(line);
-        
-        console.log('Line created and appended');
-
-        // Create icon
-        const icon = document.createElement('div');
-        icon.style.cssText = `
-          position: absolute;
-          left: ${xPercent}%;
-          top: ${yPercent}%;
-          width: ${ICON_SIZE}px;
-          height: ${ICON_SIZE}px;
-          transform: translate(-50%, -50%) scale(0.75);
-          background: ${annotation.completed ? '#22c55e' : '#3b82f6'};
-          border-radius: 50%;
-          border: 3px solid white; // Thicker border
-          box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 20px; // Increased font size
-          z-index: 2;
-          pointer-events: none;
-          -webkit-font-smoothing: antialiased;
-        `;
-        icon.innerHTML = annotation.completed ? '✓' : '!';
-
-        // Create note box
-        // Create note box with improved text handling
-        const noteBox = document.createElement('div');
-        noteBox.style.cssText = `
-          position: absolute;
-          left: ${noteXPercent}%;
-          top: ${noteYPercent}%;
-          transform: translate(-50%, -50%);
-          background: white;
-          padding: 16px; // Increased padding
-          border-radius: 8px;
-          border: 2px solid ${annotation.completed ? '#22c55e' : '#3b82f6'}; // Thicker border
-          max-width: ${annotation.note.length > TEXT_LENGTH_THRESHOLD ? '400px' : '300px'}; // Increased width
-          min-width: 160px; // Increased min-width
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-          z-index: 1;
-          font-size: 16px; // Increased font size
-          line-height: 1.5; // Increased line height
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          color: #1f2937; // Darker text for better contrast
-          word-break: break-word;
-          white-space: pre-wrap;
-        `;
-        noteBox.textContent = annotation.note;
-
-        imageContainer.appendChild(icon);
-        imageContainer.appendChild(noteBox);
-      });
-
-      container.appendChild(imageContainer);
-
-      // Capture the page
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: 'white',
-        logging: false
-      });
-
       if (i > 0) {
         pdf.addPage();
       }
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const ratio = Math.min(
-        (pageWidth - PAGE_MARGIN * 2) / canvas.width,
-        (pageHeight - PAGE_MARGIN * 2) / canvas.height
-      );
+      // Load and measure the image
+      const img = await loadImage(images[i].src);
+      const imageRatio = img.width / img.height;
       
-      const finalWidth = canvas.width * ratio;
-      const finalHeight = canvas.height * ratio;
-      const x = (pageWidth - finalWidth) / 2;
-      const y = (pageHeight - finalHeight) / 2;
+      // Reserve space for annotations (roughly 40% of page height)
+      const maxImageHeight = pageHeight * 0.6;
+      
+      // Calculate image dimensions to fit in the upper 60% of the page
+      let imageWidth = maxWidth;
+      let imageHeight = imageWidth / imageRatio;
+      
+      if (imageHeight > maxImageHeight) {
+        imageHeight = maxImageHeight;
+        imageWidth = imageHeight * imageRatio;
+      }
+      
+      // Center image horizontally
+      const imageX = margin + (maxWidth - imageWidth) / 2;
+      const imageY = margin;
 
+      // Draw image
       pdf.addImage(
-        canvas.toDataURL('image/png'),
+        img,
         'PNG',
-        x,
-        y,
-        finalWidth,
-        finalHeight,
+        imageX,
+        imageY,
+        imageWidth,
+        imageHeight,
         undefined,
         'FAST'
       );
 
-      document.body.removeChild(container);
+      // Get annotations for this image
+      const imageAnnotations = annotations[images[i].id] || [];
+      
+      // Draw markers on image
+      imageAnnotations.forEach((annotation, index) => {
+        const x = imageX + (annotation.x / img.width * imageWidth);
+        const y = imageY + (annotation.y / img.height * imageHeight);
+
+        // Draw marker circle
+        pdf.setFillColor(annotation.completed ? '#22c55e' : '#3b82f6');
+        pdf.circle(x, y, 8, 'F');
+
+        // Draw number in circle
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(8);
+        const text = String(index + 1);
+        const textWidth = pdf.getStringUnitWidth(text) * pdf.getFontSize() / pdf.internal.scaleFactor;
+        pdf.text(text, x - (textWidth/2), y + 3);
+      });
+
+      // Start annotations list below image
+      let currentY = imageY + imageHeight + margin;
+
+      // Add "Annotations" heading
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('Annotations', margin, currentY);
+      currentY += 25;
+
+      // Draw annotation list
+      imageAnnotations.forEach((annotation, index) => {
+        // Check if we need a new page
+        if (currentY > pageHeight - margin * 2) {
+          pdf.addPage();
+          currentY = margin;
+        }
+
+        // Draw numbered circle
+        const circleX = margin + 10;
+        const circleY = currentY + 10;
+        
+        pdf.setFillColor(annotation.completed ? '#22c55e' : '#3b82f6');
+        pdf.circle(circleX, circleY, 10, 'F');
+        
+        // Draw number
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(8);
+        const numberText = String(index + 1);
+        const numberWidth = pdf.getStringUnitWidth(numberText) * pdf.getFontSize() / pdf.internal.scaleFactor;
+        pdf.text(numberText, circleX - (numberWidth/2), circleY + 3);
+
+        // Draw annotation text
+        const textX = margin + 30;
+        const textMaxWidth = maxWidth - 40;
+        
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        
+        // Split text into lines
+        const textLines = pdf.splitTextToSize(annotation.note, textMaxWidth);
+        const lineHeight = 15;
+        const textHeight = textLines.length * lineHeight;
+        const padding = 8;
+
+        // Draw text background
+        pdf.setFillColor(245, 247, 250);
+        pdf.setDrawColor(annotation.completed ? '#22c55e' : '#3b82f6');
+        pdf.roundedRect(
+          textX - padding,
+          currentY,
+          textMaxWidth + padding * 2,
+          textHeight + padding * 2,
+          3,
+          3,
+          'FD'
+        );
+
+        // Draw text
+        pdf.setTextColor(0, 0, 0);
+        textLines.forEach((line, lineIndex) => {
+          pdf.text(line, textX, currentY + lineHeight * (lineIndex + 1));
+        });
+
+        currentY += textHeight + padding * 2 + margin/2;
+      });
     }
 
     return pdf.output('blob');
@@ -1045,6 +950,224 @@ const generatePDF = async () => {
     throw error;
   }
 };
+
+// Helper function to draw annotations on the image
+const drawAnnotations = async (pdf, annotations, dimensions) => {
+  const {
+    imageX,
+    imageY,
+    imageWidth,
+    imageHeight,
+    naturalWidth,
+    naturalHeight
+  } = dimensions;
+
+  annotations.forEach((annotation, index) => {
+    // Convert natural coordinates to PDF coordinates
+    const x = imageX + (annotation.x / naturalWidth * imageWidth);
+    const y = imageY + (annotation.y / naturalHeight * imageHeight);
+
+    // Draw marker circle
+    pdf.setFillColor(annotation.completed ? '#22c55e' : '#3b82f6');
+    pdf.circle(x, y, 12, 'F');
+
+    // Draw number
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(10);
+    
+    // Center the number in the circle
+    const text = String(index + 1);
+    const textWidth = pdf.getStringUnitWidth(text) * pdf.getFontSize() / pdf.internal.scaleFactor;
+    const textX = x - (textWidth / 2);
+    const textY = y + 4; // Adjust for vertical centering
+
+    pdf.text(text, textX, textY);
+  });
+};
+
+// Helper function to draw the annotation list
+const drawAnnotationList = async (pdf, annotations, dimensions) => {
+  const { imageHeight, pageWidth, pageHeight, margin } = dimensions;
+  
+  // Start position for annotation list
+  let currentY = imageHeight + margin * 2;
+  
+  // Add "Annotations" heading
+  pdf.setFontSize(14);
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Annotations', margin, currentY);
+  currentY += 30;
+
+  const maxWidth = pageWidth - margin * 3;
+  
+  for (let i = 0; i < annotations.length; i++) {
+    const annotation = annotations[i];
+    
+    // Check if we need a new page
+    if (currentY > pageHeight - margin * 2) {
+      pdf.addPage();
+      currentY = margin;
+    }
+
+    // Draw annotation number circle
+    const circleX = margin + 10;
+    const circleY = currentY + 10;
+    
+    pdf.setFillColor(annotation.completed ? '#22c55e' : '#3b82f6');
+    pdf.circle(circleX, circleY, 10, 'F');
+    
+    // Draw number in circle
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(8);
+    const numberText = String(i + 1);
+    const numberWidth = pdf.getStringUnitWidth(numberText) * pdf.getFontSize() / pdf.internal.scaleFactor;
+    pdf.text(numberText, circleX - (numberWidth / 2), circleY + 3);
+
+    // Draw annotation text
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+    const textX = margin + 30;
+    
+    // Split text into lines that fit within maxWidth
+    const textLines = pdf.splitTextToSize(annotation.note, maxWidth - 40);
+    
+    // Draw background for text
+    const lineHeight = 15;
+    const textHeight = textLines.length * lineHeight;
+    const padding = 10;
+    
+    pdf.setFillColor(245, 247, 250);
+    pdf.setDrawColor(annotation.completed ? '#22c55e' : '#3b82f6');
+    pdf.roundedRect(
+      textX - padding,
+      currentY - padding,
+      maxWidth - 20,
+      textHeight + padding * 2,
+      3,
+      3,
+      'FD'
+    );
+
+    // Draw text lines
+    pdf.setTextColor(0, 0, 0);
+    textLines.forEach((line, lineIndex) => {
+      pdf.text(line, textX, currentY + lineIndex * lineHeight);
+    });
+
+    currentY += textHeight + margin;
+  }
+};
+
+// Helper function to load images
+const loadImage = (src) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
+
+// Update drawNumberedAnnotations function
+const drawNumberedAnnotations = async (pdf, annotations, dimensions, pageIndex) => {
+  const { imageX, imageY, imageWidth, pageWidth, pageHeight, margin } = dimensions;
+  const currentImage = images[pageIndex]; // Use pageIndex instead of currentImageIndex
+  
+  // Calculate max image height to leave room for annotations
+  const maxImageHeight = pageHeight * PDF_CONSTANTS.MAX_IMAGE_HEIGHT_RATIO;
+  const imageHeight = Math.min(dimensions.imageHeight, maxImageHeight);
+  
+  // Draw markers on image
+  annotations.forEach((annotation, index) => {
+    const x = Number(imageX + (annotation.x / currentImage.width * imageWidth));
+    const y = Number(imageY + (annotation.y / currentImage.height * imageHeight));
+    
+    if (isNaN(x) || isNaN(y)) return;
+
+    // Draw marker circle with number
+    pdf.setFillColor(annotation.completed ? '#22c55e' : '#3b82f6');
+    pdf.circle(x, y, 12, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(10);
+    const markerText = String(index + 1);
+    const markerWidth = pdf.getStringUnitWidth(markerText) * pdf.getFontSize() / pdf.internal.scaleFactor;
+    // Fix: Use proper text positioning
+    pdf.text(markerText, x - (markerWidth/2), y + 3, { align: 'left' });
+  });
+
+  // Start annotations list with explicit number conversion
+  let currentY = Number(imageY + imageHeight + PDF_CONSTANTS.ANNOTATION_START_OFFSET);
+  
+  // Add "Annotations" heading with fixed coordinate handling
+  pdf.setFontSize(PDF_CONSTANTS.ANNOTATION_HEADING_SIZE);
+  pdf.setTextColor(0, 0, 0);
+  
+  // Fix: Use proper text formatting
+  pdf.text('Annotations', Number(margin), Number(currentY), { align: 'left' });
+  
+  currentY += PDF_CONSTANTS.ANNOTATION_HEADING_MARGIN;
+
+  // Draw annotation list
+  for (let i = 0; i < annotations.length; i++) {
+    const annotation = annotations[i];
+    
+    // Check if we need a new page
+    if (currentY > pageHeight - PDF_CONSTANTS.PAGE_BOTTOM_MARGIN) {
+      pdf.addPage();
+      currentY = Number(margin + PDF_CONSTANTS.ANNOTATION_START_OFFSET);
+    }
+
+    const CIRCLE_SIZE = 16;
+    const circleX = Number(margin + CIRCLE_SIZE/2);
+    const circleY = Number(currentY + CIRCLE_SIZE/2);
+    
+    // Draw number circle
+    pdf.setFillColor(annotation.completed ? '#22c55e' : '#3b82f6');
+    pdf.circle(circleX, circleY, CIRCLE_SIZE/2, 'F');
+    
+    // Draw number
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(8);
+    const numberText = String(i + 1);
+    const numberWidth = pdf.getStringUnitWidth(numberText) * pdf.getFontSize() / pdf.internal.scaleFactor;
+    // Fix: Use proper text positioning
+    pdf.text(numberText, circleX - (numberWidth/2), circleY + 3, { align: 'left' });
+
+    // Draw annotation text
+    const TEXT_MARGIN = 25;
+    const textX = Number(margin + TEXT_MARGIN);
+    const maxWidth = Number(pageWidth - margin * 3 - TEXT_MARGIN);
+    
+    pdf.setFillColor(245, 247, 250);
+    pdf.setDrawColor(annotation.completed ? '#22c55e' : '#3b82f6');
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+    
+    const textLines = pdf.splitTextToSize(String(annotation.note), maxWidth);
+    const textHeight = textLines.length * PDF_CONSTANTS.ANNOTATION_LINE_HEIGHT;
+    const padding = 6;
+    
+    pdf.roundedRect(
+      Number(textX - padding),
+      Number(currentY - padding),
+      Number(maxWidth + padding * 2),
+      Number(textHeight + padding * 2),
+      3,
+      3,
+      'FD'
+    );
+
+    // Fix: Use proper text positioning for each line
+    textLines.forEach((line, lineIndex) => {
+      const lineY = Number(currentY + (lineIndex * PDF_CONSTANTS.ANNOTATION_LINE_HEIGHT) + 8);
+      pdf.text(String(line), Number(textX), lineY, { align: 'left' });
+    });
+
+    currentY = Number(currentY + textHeight + PDF_CONSTANTS.ROW_HEIGHT);
+  }
+};
+
 // Add utility functions for line calculations
 const calculateIntersectionPoint = (boxRect, markerX, markerY) => {
   const centerX = boxRect.left + boxRect.width / 2;
@@ -1068,7 +1191,7 @@ const calculateIntersectionPoint = (boxRect, markerX, markerY) => {
   } else {
     // Intersects with top/bottom side
     x = h / Math.tan(absAngle) * Math.sign(Math.cos(angle));
-    y = h * Math.sign(Math.sin(angle));
+    y = h * Math.sign(Math.sin(absAngle));
   }
   
   return {
@@ -1174,6 +1297,27 @@ const currentAnnotations = images[currentImageIndex]
     }
   };
 
+  // Add deleteImage handler
+  const handleDeleteImage = () => {
+    if (images.length === 0) return;
+    
+    if (window.confirm('Are you sure you want to delete this image?')) {
+      const newImages = images.filter((_, index) => index !== currentImageIndex);
+      const currentId = images[currentImageIndex].id;
+      
+      // Remove annotations for the deleted image
+      const newAnnotations = { ...annotations };
+      delete newAnnotations[currentId];
+      
+      setImages(newImages);
+      setAnnotations(newAnnotations);
+      
+      // Adjust current index if necessary
+      if (currentImageIndex >= newImages.length) {
+        setCurrentImageIndex(Math.max(0, newImages.length - 1));
+      }
+    }
+  };
 
   // Update the backdrop click handler
   const handleBackdropClick = (e) => {
@@ -1207,8 +1351,154 @@ const exportButtons = (
       <span className="hidden md:inline">Export</span>
       <span className="md:hidden">Export</span>
     </Button>
+    {images.length > 0 && (
+      <Button
+        onClick={handleDeleteImage}
+        variant="outline"
+        className="flex-1 md:flex-none items-center gap-2 py-3 md:py-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+      >
+        <Trash2 className="w-4 h-4" />
+        <span className="hidden md:inline">Delete</span>
+        <span className="md:hidden">Delete</span>
+      </Button>
+    )}
   </div>
 );
+
+  // Add this new function to calculate popup position
+  const calculatePopupPosition = (annotationPosition) => {
+    if (!imageRef.current) return {};
+    
+    const imageRect = imageRef.current.getBoundingClientRect();
+    const imageHeight = imageRect.height;
+    const yPercent = (annotationPosition.y / (imageRef.current.naturalHeight || 1)) * 100;
+    
+    // If annotation is in the bottom half of the image, show popup above
+    if (yPercent > 50) {
+      return {
+        bottom: '130%',
+        top: 'auto',
+      };
+    }
+    
+    // Otherwise show below
+    return {
+      top: '130%',
+      bottom: 'auto',
+    };
+  };
+
+  // Update the annotation render section to use new positioning
+  const renderAnnotation = (annotation) => {
+    const imageWidth = imageRef.current?.naturalWidth || 0;
+    const imageHeight = imageRef.current?.naturalHeight || 0;
+    
+    const xPercent = (annotation.x / imageWidth) * 100;
+    const yPercent = (annotation.y / imageHeight) * 100;
+    const popupPosition = calculatePopupPosition(annotation);
+    
+    return (
+      <div
+        key={annotation.id}
+        className="absolute"
+        style={{
+          left: `${xPercent}%`,
+          top: `${yPercent}%`,
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'auto',
+          zIndex: selectedAnnotation?.id === annotation.id ? 1000 : 1
+        }}
+      >
+        {/* Add line container */}
+        {selectedAnnotation?.id === annotation.id && (
+          <div
+            className="absolute w-0.5 bg-blue-500"
+            style={{
+              height: '40px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              ...(popupPosition.top === 'auto' ? {
+                bottom: '100%',
+                backgroundColor: annotation.completed ? '#22c55e' : '#3b82f6'
+              } : {
+                top: '100%',
+                backgroundColor: annotation.completed ? '#22c55e' : '#3b82f6'
+              })
+            }}
+          />
+        )}
+
+        <button
+          onMouseDown={(e) => handleDragStart(annotation, e)}
+          onTouchStart={(e) => handleDragStart(annotation, e)}
+          onClick={(e) => !draggedAnnotation && toggleAnnotation(annotation, e)}
+          className={`
+            relative w-8 h-8 md:w-6 md:h-6 rounded-full 
+            flex items-center justify-center 
+            ${annotation.completed ? 'bg-green-500' : 'bg-blue-500'}
+            text-white hover:opacity-90 transition-opacity
+            touch-manipulation select-none
+            ${draggedAnnotation?.id === annotation.id ? 'scale-110 opacity-70' : ''}
+          `}
+          style={{
+            touchAction: 'none',
+            WebkitTapHighlightColor: 'transparent'
+          }}
+        >
+          {annotation.completed ? (
+            <Check className="w-4 h-4 md:w-3.5 md:h-3.5" />
+          ) : (
+            <AlertCircle className="w-4 h-4 md:w-3.5 md:h-3.5" />
+          )}
+        </button>
+
+        {selectedAnnotation?.id === annotation.id && (
+          <div
+            ref={popupRef}
+            className="absolute z-10 bg-white p-4 rounded-lg shadow-lg w-64 md:w-72"
+            style={{
+              left: '50%',
+              transform: 'translateX(-50%)',
+              border: '1px solid #e5e7eb',
+              ...popupPosition
+            }}
+          >
+            {/* ...existing popup content... */}
+            <p className="mb-4 text-sm text-gray-700 break-words">{annotation.note}</p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => toggleCompletion(annotation.id)}
+                className="flex-1 h-9 text-sm"
+              >
+                {annotation.completed ? (
+                  <>
+                    <X className="w-4 h-4 mr-1" />
+                    Undo
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-1" />
+                    Complete
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => deleteAnnotation(annotation.id, e)}
+                className="flex-1 h-9 text-sm text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="relative">
@@ -1380,93 +1670,7 @@ const exportButtons = (
                         onMouseUp={() => setDraggedAnnotation(null)}
                         onTouchEnd={() => setDraggedAnnotation(null)}
                       >
-                        {currentAnnotations.map((annotation) => {
-  const imageWidth = imageRef.current?.naturalWidth || 0;
-  const imageHeight = imageRef.current?.naturalHeight || 0;
-  
-  // Convert absolute coordinates to percentages
-  const xPercent = (annotation.x / imageWidth) * 100;
-  const yPercent = (annotation.y / imageHeight) * 100;
-  
-  return (
-    <div
-      key={annotation.id}
-      className="absolute"
-      style={{
-        left: `${xPercent}%`,
-        top: `${yPercent}%`,
-        transform: 'translate(-50%, -50%)',
-        cursor: draggedAnnotation?.id === annotation.id ? 'grabbing' : 'grab',
-        pointerEvents: 'auto',
-        zIndex: draggedAnnotation?.id === annotation.id ? 1000 : 1
-      }}
-    >
-      <button
-        onMouseDown={(e) => handleDragStart(annotation, e)}
-        onTouchStart={(e) => handleDragStart(annotation, e)}
-        onClick={(e) => !draggedAnnotation && toggleAnnotation(annotation, e)}
-        className={`
-        w-10 h-10 md:w-6 md:h-6 rounded-full 
-        flex items-center justify-center 
-        ${annotation.completed ? 'bg-green-500' : 'bg-blue-500'}
-        text-white hover:opacity-90 transition-opacity
-        touch-manipulation
-        active:scale-110
-        ${draggedAnnotation?.id === annotation.id ? 'scale-110 opacity-70' : ''}
-      `}
-      style={{
-        touchAction: 'none', // Prevents default touch behaviors
-        WebkitTapHighlightColor: 'transparent', // Removes tap highlight on iOS
-      }}
-    >
-      {annotation.completed ? (
-        <Check className="w-5 h-5 md:w-4 md:h-4" />
-      ) : (
-        <AlertCircle className="w-5 h-5 md:w-4 md:h-4" />
-      )}
-    </button>
-
-      {selectedAnnotation?.id === annotation.id && (
-        <div
-          ref={popupRef}
-          className="absolute z-10 bg-white p-4 rounded-lg shadow-lg w-64 md:w-72"
-          style={{
-            top: '130%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            border: '1px solid #e5e7eb',
-            touchAction: 'none', // Add this line
-          }}
-        >
-          <p className="mb-4 text-sm text-gray-700 break-words">{annotation.note}</p>
-          <div className="flex items-center gap-2">
-          <Button
-  size="sm"
-  variant="outline"
-  onClick={(e) => toggleCompletion(annotation.id, e)}
-  onTouchEnd={(e) => toggleCompletion(annotation.id, e)} // Add touch handler
-  className="flex-1 h-9 text-sm"
->
-  <Check className="w-4 h-4 mr-1" />
-  {annotation.completed ? 'Undo' : 'Complete'}
-</Button>
-
-<Button
-  size="sm"
-  variant="outline"
-  onClick={(e) => deleteAnnotation(annotation.id, e)}
-  onTouchEnd={(e) => deleteAnnotation(annotation.id, e)} // Add touch handler
-  className="flex-1 h-9 text-sm"
->
-  <X className="w-4 h-4 mr-1" />
-  Delete
-</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-})}
+                        {currentAnnotations.map(renderAnnotation)}
 
                       </div>
                     </div>
@@ -1559,4 +1763,4 @@ const exportButtons = (
   );
 };
 
-export default ImageAnnotator;
+export { ImageAnnotator };
