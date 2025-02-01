@@ -647,28 +647,6 @@ const generateExportableHtml = () => {
     <body>
     <div class="container">
       ${allPages}
-    <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e5e7eb;">
-        <p style="color: #6b7280; font-size: 14px;">
-          Created with 
-          <a 
-            href="https://plsfixnow.vercel.app" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style="color: #3b82f6; text-decoration: none;"
-          >
-            PLSFIX-THX
-          </a>
-           by 
-          <a 
-            href="https://www.github.com/michaelarthur" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style="color: #3b82f6; text-decoration: none;"
-          >
-            Michael Arthur
-          </a>
-        </p>
-      </footer>
     </div>
     <script>
         function togglePopup(id) {
@@ -1724,19 +1702,6 @@ const exportButtons = (
           )}
         </div>
       </Card>
-      <div className="mt-6 text-center border-t border-gray-200 pt-4">
-  <p className="text-sm text-gray-500">
-    Created by{" "}
-    <a 
-      href="https://github.com/marthur3" 
-      target="_blank" 
-      rel="noopener noreferrer"
-      className="text-blue-500 hover:text-blue-700 transition-colors"
-    >
-      Mikey B. Arthur
-    </a>
-  </p>
-</div>
       {/* Add Floating Action Button for mobile */}
       {isMobile && images.length > 0 && (
         <div 
