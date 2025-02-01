@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon, Plus, Copy, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, X, FileImage, Clipboard, Download, HelpCircle, Image as ImageIcon, Plus, Copy, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Instructions from './Instructions';
 import ExportDialog from './ExportDialog';
@@ -53,14 +53,14 @@ export default function ImageAnnotator() {
   // Add new state for clipboard feedback
   const [clipboardFeedback, setClipboardFeedback] = useState(null);
   
+  // Add loading state
+  const [isExporting, setIsExporting] = useState(false);
+
   // Update canShare detection to check for files support
   const checkShareCapabilities = async () => {
     if (!navigator.share) return false;
     
     try {
-      // Check basic share support
-      await navigator.share({ title: 'test' }).catch(() => {});
-      
       // Check file sharing support if available
       if (navigator.canShare) {
         const testFile = new File([""], "test.pdf", { type: "application/pdf" });
