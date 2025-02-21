@@ -743,29 +743,50 @@ const generateExportableHtml = () => {
 // Update your handleExportSubmit function
 const handleExportSubmit = async (e) => {
   e.preventDefault();
-  const filename = e.target.filename.value.trim();
-  const format = e.target.format.value;
+  const format = e.target.format?.value;
   
+  setIsExporting(true);
   try {
-    if (format === 'html') {
-      const html = generateExportableHtml();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filename}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } else if (format === 'pdf') {
-      await handleExportPNG(filename);
+    switch (format) {
+      case 'pdf':
+        const pdfBlob = await generatePDF();
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${e.target.filename.value}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        break;
+      
+      case 'png':
+        await handleExportImage();
+        break;
+      
+      case 'html':
+        const html = generateExportableHtml();
+        const htmlBlob = new Blob([html], { type: 'text/html' });
+        const htmlUrl = URL.createObjectURL(htmlBlob);
+        const htmlLink = document.createElement('a');
+        htmlLink.href = htmlUrl;
+        htmlLink.download = `${e.target.filename.value}.html`;
+        document.body.appendChild(htmlLink);
+        htmlLink.click();
+        document.body.removeChild(htmlLink);
+        URL.revokeObjectURL(htmlUrl);
+        break;
+      
+      case 'clipboard':
+        await handleCopyImage();
+        break;
     }
-    
-    setShowExportDialog({ visible: false });
+    setShowExportDialog({ visible: false, type: null });
   } catch (error) {
     console.error('Export failed:', error);
     alert('Export failed. Please try again.');
+  } finally {
+    setIsExporting(false);
   }
 };
 
@@ -1047,10 +1068,10 @@ const loadImage = (src) => {
 };
 
 
-// Update drawNumberedAnnotations function
+// Fix: Add proper function declaration
 const drawNumberedAnnotations = async (pdf, annotations, dimensions, pageIndex) => {
   const { imageX, imageY, imageWidth, pageWidth, pageHeight, margin } = dimensions;
-  const currentImage = images[pageIndex]; // Use pageIndex instead of currentImageIndex
+  const currentImage = images[pageIndex];
   
   // Calculate max image height to leave room for annotations
   const maxImageHeight = pageHeight * PDF_CONSTANTS.MAX_IMAGE_HEIGHT_RATIO;
@@ -1258,20 +1279,31 @@ const currentAnnotations = images[currentImageIndex]
       setShowExportDialog({ visible: false, type: null });
     }
   };
-  const handleExportPNG = async (filename) => {
-    try {
-      const blob = await generatePDF();
+  
+  const exportImage = async () => {
+    // Export each image as a separate PNG file
+    for (let i = 0; i < images.length; i++) {
+      const currentId = images[i].id;
+      const imageAnnotations = annotations[currentId] || [];
+      
+      const canvas = await generateAnnotatedImage(i, imageAnnotations);
+      if (!canvas) continue;
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) continue;
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${filename}.pdf`;
+      // If multiple images, add page number to filename
+      const filename = images.length > 1 
+        ? `annotations-page-${i + 1}.png`
+        : 'annotations.png';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
     }
   };
 
@@ -1478,6 +1510,214 @@ const exportButtons = (
     );
   };
 
+  // Add this helper function
+  const calculateTextSize = (imageWidth) => {
+    const baseWidth = 1200; // Increased base width to make text relatively smaller
+    const baseTextSize = 24; // Reduced from 28
+    const minTextSize = 18; // Reduced from 24
+    const scaleFactor = Math.max(0.8, imageWidth / baseWidth); // Reduced minimum scale factor
+    
+    return Math.max(minTextSize, Math.round(baseTextSize * scaleFactor));
+  };
+
+  const generateAnnotatedImage = async (pageIndex) => {
+    const image = images[pageIndex];
+    if (!image) return null;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const img = await loadImage(image.src);
+    const imageAnnotations = annotations[image.id] || [];
+
+    // Use same scaling logic as before
+    const baseWidth = 1200;
+    const baseTextSize = 24;
+    const minTextSize = 18;
+    const scaleFactor = Math.max(0.8, img.naturalWidth / baseWidth);
+    
+    const textSize = Math.max(minTextSize, Math.round(baseTextSize * scaleFactor));
+    const margin = Math.max(60, Math.round(img.naturalWidth * 0.05));
+    const iconSize = Math.max(32, Math.round(textSize * 1.5));
+    const lineHeight = Math.round(textSize * 1.5);
+    
+    canvas.width = img.naturalWidth + (margin * 2);
+    canvas.height = img.naturalHeight + (margin * 4) + 
+                   (imageAnnotations.length * lineHeight * 2);
+
+    // Draw page content
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Add page number if multiple pages
+    if (images.length > 1) {
+      ctx.font = `bold ${textSize}px Arial`;
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Page ${pageIndex + 1}`, margin, margin - 10);
+    }
+
+    // Draw single page content
+    const imageX = margin;
+    const imageY = margin;
+    ctx.drawImage(img, imageX, imageY);
+
+    // Draw markers on image
+    imageAnnotations.forEach((annotation, index) => {
+      const x = imageX + annotation.x;
+      const y = imageY + annotation.y;
+
+      ctx.beginPath();
+      ctx.arc(x, y, iconSize/2, 0, 2 * Math.PI);
+      ctx.fillStyle = annotation.completed ? '#22c55e' : '#3b82f6';
+      ctx.fill();
+
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${textSize}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((index + 1).toString(), x, y);
+    });
+
+    let currentY = imageY + img.naturalHeight + margin;
+
+    // Draw "Annotations" heading
+    ctx.font = `bold ${textSize * 1.2}px Arial`; // Slightly larger for heading
+    ctx.fillStyle = '#000000';
+    ctx.textAlign = 'left';
+    ctx.fillText('Annotations', margin, currentY);
+    currentY += lineHeight;
+
+    // Draw annotation list
+    imageAnnotations.forEach((annotation, index) => {
+      const circleX = margin + iconSize/2;
+      const circleY = currentY + iconSize/2;
+      
+      ctx.beginPath();
+      ctx.arc(circleX, circleY, iconSize/2, 0, 2 * Math.PI);
+      ctx.fillStyle = annotation.completed ? '#22c55e' : '#3b82f6';
+      ctx.fill();
+      
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${textSize}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((index + 1).toString(), circleX, circleY);
+
+      const textX = margin + iconSize + margin/2;
+      const textMaxWidth = canvas.width - (margin * 3) - iconSize;
+      const padding = Math.max(6, Math.round(textSize * 0.2));
+      
+      ctx.font = `${textSize}px Arial`;
+      
+      // Text wrapping
+      const words = annotation.note.split(' ');
+      let line = '';
+      let lines = [];
+      
+      for (let word of words) {
+        const testLine = line + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > textMaxWidth - padding * 2) {
+          lines.push(line);
+          line = word + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+      
+      const textHeight = lines.length * lineHeight;
+      
+      ctx.fillStyle = '#f5f7fa';
+      ctx.strokeStyle = annotation.completed ? '#22c55e' : '#3b82f6';
+      ctx.lineWidth = 1;
+      
+      ctx.beginPath();
+      ctx.roundRect(
+        textX - padding,
+        currentY - padding,
+        textMaxWidth + padding * 2,
+        textHeight + padding * 2,
+        3
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      lines.forEach((line, lineIndex) => {
+        ctx.fillText(
+          line.trim(),
+          textX,
+          currentY + (lineIndex * lineHeight) + lineHeight/2
+        );
+      });
+
+      currentY += textHeight + lineHeight;
+    });
+
+    return canvas;
+  };
+
+  const handleExportImage = async () => {
+    // Export each image as a separate PNG file
+    for (let i = 0; i < images.length; i++) {
+      const currentId = images[i].id;
+      const imageAnnotations = annotations[currentId] || [];
+      
+      const canvas = await generateAnnotatedImage(i, imageAnnotations);
+      if (!canvas) continue;
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) continue;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // If multiple images, add page number to filename
+      const filename = images.length > 1 
+        ? `annotations-page-${i + 1}.png`
+        : 'annotations.png';
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleCopyImage = async () => {
+    if (images.length > 1) {
+      setClipboardFeedback('Note: Only copying current page. Use Export for all pages.');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    const canvas = await generateAnnotatedImage(currentImageIndex);
+    if (!canvas) return;
+
+    try {
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob((b) => resolve(b), 'image/png', 1.0);
+      });
+      
+      if (!blob) throw new Error('Failed to create image blob');
+
+      const clipboardItem = new ClipboardItem({
+        [blob.type]: blob
+      });
+
+      await navigator.clipboard.write([clipboardItem]);
+      setClipboardFeedback('Image copied to clipboard!');
+    } catch (error) {
+      console.error('Copy failed:', error);
+    } finally {
+      setTimeout(() => setClipboardFeedback(null), 2000);
+    }
+  };
+
   return (
     <div className="relative">
       <Analytics />
@@ -1488,7 +1728,7 @@ const exportButtons = (
           defaultName={`annotation-${currentImageIndex + 1}`}
           onShare={handleShare}
           canShare={canShare}
-          type={showExportDialog.type}  // Add this line
+          type={showExportDialog.type}
         />
       )}
 

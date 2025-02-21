@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type }) => {
   const [shareFormat, setShareFormat] = useState('pdf');
   const [canShareFiles, setCanShareFiles] = useState(false);
+  const [canCopyImage, setCanCopyImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const checkFileSharing = async () => {
+    const checkCapabilities = async () => {
+      // Check file sharing support
       try {
         if (navigator.canShare) {
           const testFile = new File([""], "test.pdf", { type: "application/pdf" });
@@ -18,8 +20,14 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
       } catch {
         setCanShareFiles(false);
       }
+
+      // Fix: Check clipboard image support properly
+      setCanCopyImage(
+        'ClipboardItem' in window && 
+        typeof navigator.clipboard?.write === 'function'
+      );
     };
-    checkFileSharing();
+    checkCapabilities();
   }, []);
 
   const handleShare = async () => {
@@ -32,7 +40,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
     } catch (err) {
       setError(err.message === 'AbortError' ? 
         'Share cancelled' : 
-        'Failed to generate PDF with annotations'
+        'Failed to generate export'
       );
     } finally {
       setIsLoading(false);
@@ -53,7 +61,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
           {type === 'share' ? 'Share Options' : 'Export Options'}
         </h2>
         
-        {type === 'share' && (
+        {type === 'share' ? (
           <div className="space-y-4">
             <div className="flex flex-col gap-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -65,6 +73,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value="pdf">PDF Document</option>
+                <option value="png">Image (PNG)</option>
                 {!canShareFiles && <option value="html">Interactive HTML</option>}
               </select>
             </div>
@@ -75,7 +84,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
 
             {isLoading && (
               <div className="text-sm text-blue-600">
-                Preparing document with annotations...
+                Preparing document...
               </div>
             )}
 
@@ -105,9 +114,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
               )}
             </div>
           </div>
-        )}
-
-        {type === 'export' && (
+        ) : (
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -129,10 +136,24 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
                   defaultValue="pdf"
                 >
                   <option value="pdf">PDF Document (with annotations)</option>
+                  <option value="png">Image (PNG)</option>
                   <option value="html">HTML (interactive)</option>
                 </select>
               </div>
             </div>
+
+            {canCopyImage && (
+              <Button
+                type="button"
+                onClick={() => onSubmit({ preventDefault: () => {}, target: { format: { value: 'clipboard' } } })}
+                variant="outline"
+                className="w-full gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                Copy to Clipboard
+              </Button>
+            )}
+
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
