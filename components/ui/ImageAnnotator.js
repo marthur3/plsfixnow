@@ -585,19 +585,18 @@ const generateExportableHtml = () => {
           background-color: #22c55e;
         }
         
-        .popup { 
+        .popup {
           display: none;
           position: absolute;
           background: white;
-          padding: 16px;
-          border-radius: 8px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-          z-index: 1000;
-          width: 280px;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
           border: 1px solid #e5e7eb;
-          top: 130%;
-          left: 50%;
+          width: 280px;
+          z-index: 1000;
           transform: translateX(-50%);
+          left: 50%;
         }
 
         .note-text {
@@ -641,6 +640,62 @@ const generateExportableHtml = () => {
             width: calc(100% - 32px);
             max-width: 320px;
           }
+        }
+
+        /* Add edge detection styles */
+        .annotation:has(.popup[style*="display: block"]) {
+          z-index: 1001;
+        }
+
+        /* Left edge */
+        .annotation[style*="left: 25%"] .popup,
+        .annotation[style*="left: 20%"] .popup,
+        .annotation[style*="left: 15%"] .popup,
+        .annotation[style*="left: 10%"] .popup,
+        .annotation[style*="left: 5%"] .popup {
+          left: 0;
+          transform: translateX(0);
+        }
+
+        /* Right edge */
+        .annotation[style*="left: 75%"] .popup,
+        .annotation[style*="left: 80%"] .popup,
+        .annotation[style*="left: 85%"] .popup,
+        .annotation[style*="left: 90%"] .popup,
+        .annotation[style*="left: 95%"] .popup {
+          right: 0;
+          left: auto;
+          transform: translateX(0);
+        }
+
+        /* Top edge */
+        .annotation[style*="top: 25%"] .popup,
+        .annotation[style*="top: 20%"] .popup,
+        .annotation[style*="top: 15%"] .popup,
+        .annotation[style*="top: 10%"] .popup,
+        .annotation[style*="top: 5%"] .popup {
+          top: 100%;
+          bottom: auto;
+          margin-top: 10px;
+        }
+
+        /* Bottom edge */
+        .annotation[style*="top: 75%"] .popup,
+        .annotation[style*="top: 80%"] .popup,
+        .annotation[style*="top: 85%"] .popup,
+        .annotation[style*="top: 90%"] .popup,
+        .annotation[style*="top: 95%"] .popup {
+          bottom: 100%;
+          top: auto;
+          margin-bottom: 10px;
+        }
+
+        /* Default center positioning */
+        .annotation .popup {
+          left: 50%;
+          transform: translateX(-50%);
+          top: 100%;
+          margin-top: 10px;
         }
       </style>
     </head>
@@ -1377,25 +1432,48 @@ const exportButtons = (
 
   // Add this new function to calculate popup position
   const calculatePopupPosition = (annotationPosition) => {
-    if (!imageRef.current) return {};
+    if (!imageRef.current || !popupRef.current) return {};
     
     const imageRect = imageRef.current.getBoundingClientRect();
-    const imageHeight = imageRect.height;
+    const popupRect = popupRef.current.getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect() || imageRect;
+    
     const yPercent = (annotationPosition.y / (imageRef.current.naturalHeight || 1)) * 100;
+    const xPercent = (annotationPosition.x / (imageRef.current.naturalWidth || 1)) * 100;
     
-    // If annotation is in the bottom half of the image, show popup above
-    if (yPercent > 50) {
-      return {
-        bottom: '130%',
-        top: 'auto',
-      };
-    }
+    // Calculate if popup would be cut off
+    const isNearTop = yPercent < 25;
+    const isNearBottom = yPercent > 75;
+    const isNearLeft = xPercent < 25;
+    const isNearRight = xPercent > 75;
     
-    // Otherwise show below
-    return {
-      top: '130%',
-      bottom: 'auto',
+    let position = {
+      transform: 'translateX(-50%)',
+      left: '50%'
     };
+
+    // Vertical positioning
+    if (isNearTop) {
+      position.top = '130%';
+      position.bottom = 'auto';
+    } else if (isNearBottom) {
+      position.bottom = '130%';
+      position.top = 'auto';
+    } else {
+      position.top = '130%';
+      position.bottom = 'auto';
+    }
+
+    // Horizontal positioning
+    if (isNearLeft) {
+      position.transform = 'translateX(0)';
+      position.left = '0';
+    } else if (isNearRight) {
+      position.transform = 'translateX(-100%)';
+      position.left = '100%';
+    }
+
+    return position;
   };
 
   // Update the annotation render section to use new positioning
@@ -1541,6 +1619,7 @@ const exportButtons = (
     const margin = Math.max(60, Math.round(img.naturalWidth * 0.05));
     const iconSize = Math.max(32, Math.round(textSize * 1.5));
     const lineHeight = Math.round(textSize * 1.5);
+    const padding = Math.max(6, Math.round(textSize * 0.2)); // Add padding definition
     
     canvas.width = img.naturalWidth + (margin * 2);
     canvas.height = img.naturalHeight + (margin * 4) + 
@@ -1607,7 +1686,6 @@ const exportButtons = (
 
       const textX = margin + iconSize + margin/2;
       const textMaxWidth = canvas.width - (margin * 3) - iconSize;
-      const padding = Math.max(6, Math.round(textSize * 0.2));
       
       ctx.font = `${textSize}px Arial`;
       
