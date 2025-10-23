@@ -12,13 +12,13 @@ const Pricing = () => {
         <div className="flex flex-col text-center w-full mb-20">
           <p className="font-medium text-primary mb-8">Pricing</p>
           <h2 className="font-bold text-3xl lg:text-5xl tracking-tight">
-            Save hours of repetitive code and ship faster!
+            Start free, upgrade when you need more power
           </h2>
         </div>
 
         <div className="relative flex justify-center flex-col lg:flex-row items-center lg:items-stretch gap-8">
-          {config.stripe.plans.map((plan) => (
-            <div key={plan.priceId} className="relative w-full max-w-lg">
+          {config.stripe.plans.map((plan, index) => (
+            <div key={plan.priceId || `plan-${index}`} className="relative w-full max-w-lg">
               {plan.isFeatured && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                   <span
@@ -58,11 +58,11 @@ const Pricing = () => {
                     </div>
                   )}
                   <p className={`text-5xl tracking-tight font-extrabold`}>
-                    ${plan.price}
+                    {plan.isFree ? "Free" : `$${plan.price}`}
                   </p>
                   <div className="flex flex-col justify-end mb-[4px]">
                     <p className="text-xs text-base-content/60 uppercase font-semibold">
-                      USD
+                      {plan.isFree ? "" : plan.interval === "one-time" ? "one-time" : plan.interval || "USD"}
                     </p>
                   </div>
                 </div>
@@ -89,10 +89,21 @@ const Pricing = () => {
                   </ul>
                 )}
                 <div className="space-y-2">
-                  <ButtonCheckout priceId={plan.priceId} />
+                  {plan.isFree ? (
+                    <a
+                      href="https://chrome.google.com/webstore/detail/plsfix-thx"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-outline btn-block"
+                    >
+                      Install Extension
+                    </a>
+                  ) : (
+                    <ButtonCheckout priceId={plan.priceId} />
+                  )}
 
                   <p className="flex items-center justify-center gap-2 text-sm text-center text-base-content/80 font-medium relative">
-                    Pay once. Access forever.
+                    {plan.isFree ? "Always free • No credit card required" : plan.interval === "one-time" ? "One-time payment • Lifetime access" : "Monthly billing • Cancel anytime"}
                   </p>
                 </div>
               </div>

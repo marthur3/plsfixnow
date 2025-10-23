@@ -21,28 +21,74 @@ const Hero = () => {
           </svg>
         </a>
 
-        <h1 className="font-extrabold text-4xl lg:text-6xl tracking-tight md:-mb-4">
-          Ship your startup in days, not weeks
+        <h1 className="font-black text-4xl lg:text-6xl tracking-tighter md:-mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+          Transform Screenshots Into Professional Documentation
         </h1>
         <p className="text-lg opacity-80 leading-relaxed">
-          The NextJS boilerplate with all you need to build your SaaS, AI tool,
-          or any other web app. From idea to production in 5 minutes.
+          The most powerful Chrome extension for screenshot annotation. Capture, annotate, and export professional documentation with numbered annotations, notes, and multiple export formats.
         </p>
-        <button className="btn btn-primary btn-wide">
-          Get {config.appName}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <a
+            href="/demo"
+            className="btn btn-secondary btn-wide"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Try Live Demo
+          </a>
+          <a
+            href="https://chrome.google.com/webstore/detail/plsfix-thx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary btn-wide"
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.374 0 0 5.373 0 12s5.374 12 12 12c6.627 0 12-5.373 12-12S18.627 0 12 0zm5.568 8.16c-.169 1.858-.896 3.616-2.001 5.06-.686-.395-1.457-.623-2.286-.623a5.007 5.007 0 0 0-2.228.527A6.985 6.985 0 0 1 12 5.163c1.377 0 2.666.402 3.751 1.099l1.817-1.817zm-8.569 9.96A6.965 6.965 0 0 1 5.163 12c0-1.377.402-2.666 1.099-3.751l1.817 1.817c-1.105 1.444-1.832 3.202-2.001 5.06a5.007 5.007 0 0 0 2.286.623c.789 0 1.52-.228 2.228-.527zM12 18.837a6.965 6.965 0 0 1-6.837-3.836 5.007 5.007 0 0 0 .623-2.286c0-.789-.228-1.52-.527-2.228A6.985 6.985 0 0 1 12 5.163v13.674z"/>
+            </svg>
+            Install Free Extension
+          </a>
+        </div>
+        <div className="text-center sm:text-left">
+          <span className="text-sm opacity-60">Free • 500,000+ users • ⭐⭐⭐⭐⭐</span>
+        </div>
 
         <TestimonialsAvatars priority={true} />
       </div>
       <div className="lg:w-full">
-        <Image
-          src="https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=3540&q=80"
-          alt="Product Demo"
-          className="w-full"
-          priority={true}
-          width={500}
-          height={500}
-        />
+        <div className="relative bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl shadow-2xl p-8 border border-slate-300">
+          <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="ml-2 text-xs text-gray-500 font-mono">Screenshot Editor</span>
+            </div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="relative">
+                <div className="h-32 bg-gradient-to-br from-blue-50 to-indigo-100 rounded border-2 border-dashed border-blue-300 flex items-center justify-center">
+                  <span className="text-blue-600 font-semibold">Annotated Screenshot</span>
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                <div className="absolute top-4 left-4 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                <div className="absolute bottom-4 right-4 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <div className="flex-1 h-8 bg-blue-100 rounded flex items-center px-2">
+                  <span className="text-xs text-blue-700">📝 Add annotation</span>
+                </div>
+                <div className="h-8 w-20 bg-green-500 rounded flex items-center justify-center">
+                  <span className="text-xs text-white font-semibold">Export</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="text-center">
+            <span className="text-xs text-gray-500">✨ Professional screenshot annotation made simple</span>
+          </div>
+        </div>
       </div>
     </section>
   );
