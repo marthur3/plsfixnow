@@ -1,52 +1,52 @@
 const FeatureComparison = () => {
   const features = [
     {
-      feature: "Daily Screenshots",
+      feature: "Daily Markups",
       free: "5 per day",
       premium: "Unlimited",
-      description: "Area selection and full page capture"
+      description: "Capture and annotate slides and dashboards"
     },
     {
-      feature: "Basic Annotations",
+      feature: "Numbered Annotations",
       free: true,
       premium: true,
-      description: "Numbered markers with expandable notes"
+      description: "Pin feedback to exact spots on any visual"
     },
     {
       feature: "Chrome Extension",
       free: true,
       premium: true,
-      description: "Full-featured Chrome extension with keyboard shortcuts"
+      description: "Works with PowerPoint Online, Power BI, Google Slides, and more"
     },
     {
       feature: "PNG Export",
       free: true,
       premium: true,
-      description: "Export screenshots as high-quality PNG files"
+      description: "Export annotated visuals as high-quality PNG files"
     },
     {
       feature: "Watermarks",
       free: "Yes",
       premium: "None",
-      description: "Export watermarks on free version"
+      description: "Free exports include a small watermark"
     },
     {
       feature: "PDF Export",
       free: false,
       premium: true,
-      description: "Professional PDF documents with custom layouts"
+      description: "Professional PDF documents for formal review cycles"
     },
     {
       feature: "HTML Export",
       free: false,
       premium: true,
-      description: "Printable web format for sharing and archiving"
+      description: "Shareable web format for archiving feedback"
     },
     {
-      feature: "All Annotation Features",
+      feature: "All Annotation Tools",
       free: false,
       premium: true,
-      description: "Advanced annotation tools and formatting options"
+      description: "Advanced markup tools and formatting options"
     },
     {
       feature: "Priority Support",
@@ -66,11 +66,10 @@ const FeatureComparison = () => {
     <section className="py-24 px-8 max-w-6xl mx-auto">
       <div className="text-center mb-16">
         <h2 className="font-bold text-3xl lg:text-5xl tracking-tight mb-8">
-          Free vs Premium Features
+          Start Free, Upgrade When You Need More
         </h2>
         <p className="text-lg opacity-80 leading-relaxed max-w-2xl mx-auto">
-          Start with our powerful free version and upgrade when you need advanced features 
-          for professional documentation and team collaboration.
+          The free version handles your daily slide reviews. Go Pro when your team needs unlimited markups and watermark-free exports.
         </p>
       </div>
 

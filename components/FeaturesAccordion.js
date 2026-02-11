@@ -3,20 +3,15 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 
-// The features array showcases PLSFIX-THX's key capabilities for professional screenshot annotation
-// - title: The feature name
-// - description: Detailed explanation of the feature's benefits
-// - type: Media type (video or image)  
-// - path: Media file path for demonstrations
-// - alt: Accessibility description for images
 const features = [
   {
-    title: "Advanced Screenshot Capture",
+    title: "Capture Any Slide or Dashboard",
     description:
-      "Capture any part of any website with precision. Use keyboard shortcuts (Alt+Shift+S for area selection, Alt+Shift+F for full page) or click the extension icon. Smart crosshair overlay ensures pixel-perfect selection every time.",
+      "One click to capture exactly what you're reviewing. Works with PowerPoint Online, Power BI dashboards, Google Slides, or any web-based presentation. Use keyboard shortcuts (Alt+Shift+S for area, Alt+Shift+F for full page) or the extension icon.",
     type: "image",
+    // TODO: Replace with actual screenshot of a PowerPoint slide being captured
     path: "https://images.unsplash.com/photo-1551650975-87deedd944c3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
-    alt: "Screenshot capture interface",
+    alt: "Capturing a PowerPoint slide for annotation",
     svg: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -36,12 +31,13 @@ const features = [
     ),
   },
   {
-    title: "Professional Annotation System",
+    title: "Drop Numbered Annotations on Exact Spots",
     description:
-      "Add numbered markers with detailed notes that automatically position perfectly. Drag annotations anywhere on your image, mark them as complete, and organize complex documentation with ease. Perfect for bug reports, feature requests, and tutorials.",
-    type: "image", 
+      "Click anywhere to add a numbered marker with a note. Point to the exact chart, text box, or visual that needs changes. No more 'the thing on the left' — each annotation pins your feedback to a precise location on the slide.",
+    type: "image",
+    // TODO: Replace with actual screenshot showing numbered annotations on a Power BI dashboard
     path: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    alt: "Annotation interface with numbered markers",
+    alt: "Numbered annotations on a dashboard visual",
     svg: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -60,9 +56,9 @@ const features = [
     ),
   },
   {
-    title: "Multiple Export Formats",
+    title: "Share via Email, Slack, or Teams",
     description:
-      "Export your annotated screenshots as high-quality PDFs with professional layouts, PNG images for sharing, HTML files for web publishing, or copy directly to clipboard. Each format is optimized for different use cases and maintains annotation quality.",
+      "Export as PNG and drop it into any channel — email, Slack, Microsoft Teams, or paste directly into a document. Your annotations are baked into the image. Recipients see exactly what needs to change without installing anything.",
     svg: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -81,9 +77,9 @@ const features = [
     ),
   },
   {
-    title: "Privacy & Performance",
+    title: "Built for Speed, Not Overhead",
     description:
-      "All processing happens locally in your browser - no data is sent to external servers. Lightning-fast performance with optimized image handling, automatic storage management, and seamless integration with your workflow. Works offline too.",
+      "Everything happens in your browser — no uploads, no servers, no IT approvals. Capture a slide, annotate it, and share it in under 10 seconds. Perfect for fast-moving review cycles where every revision round costs time.",
     svg: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -96,14 +92,13 @@ const features = [
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+          d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
         />
       </svg>
     ),
   },
 ];
 
-// An SEO-friendly accordion component including the title and a description (when clicked.)
 const Item = ({ feature, isOpen, setFeatureSelected }) => {
   const accordion = useRef(null);
   const { title, description, svg } = feature;
@@ -145,8 +140,6 @@ const Item = ({ feature, isOpen, setFeatureSelected }) => {
   );
 };
 
-// A component to display the media (video or image) of the feature. If the type is not specified, it will display an empty div.
-// Video are set to autoplay for best UX.
 const Media = ({ feature }) => {
   const { type, path, format, alt } = feature;
   const style = "rounded-2xl aspect-square w-full sm:w-[26rem]";
@@ -185,8 +178,6 @@ const Media = ({ feature }) => {
   }
 };
 
-// A component to display 2 to 5 features in an accordion.
-// By default, the first feature is selected. When a feature is clicked, the others are closed.
 const FeaturesAccordion = () => {
   const [featureSelected, setFeatureSelected] = useState(0);
 
@@ -197,10 +188,11 @@ const FeaturesAccordion = () => {
     >
       <div className="px-8">
         <h2 className="font-extrabold text-4xl lg:text-6xl tracking-tight mb-12 md:mb-24">
-          Everything you need for professional
+          From slide to
           <span className="bg-neutral text-neutral-content px-2 md:px-4 ml-1 md:ml-1.5 leading-relaxed whitespace-nowrap">
-            screenshot annotation
+            precise feedback
           </span>
+          in seconds
         </h2>
         <div className=" flex flex-col md:flex-row gap-12 md:gap-24">
           <div className="grid grid-cols-1 items-stretch gap-8 sm:gap-12 lg:grid-cols-2 lg:gap-20">

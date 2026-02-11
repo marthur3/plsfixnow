@@ -2,27 +2,45 @@
 
 import { useRef, useState } from "react";
 
-// <FAQ> component is a lsit of <Item> component
-// Just import the FAQ & add your FAQ content to the const faqList
-
 const faqList = [
   {
-    question: "What do I get exactly?",
-    answer: <div className="space-y-2 leading-relaxed">Loreum Ipseum</div>,
-  },
-  {
-    question: "Can I get a refund?",
+    question: "Does this work with PowerPoint and Power BI?",
     answer: (
       <p>
-        Yes! You can request a refund within 7 days of your purchase. Reach out
-        by email.
+        Yes. Capture any PowerPoint slide (via PowerPoint Online or the desktop app in your browser), any Power BI dashboard, Google Slides, Tableau, or any other web-based presentation tool. If you can see it in Chrome, you can annotate it.
       </p>
     ),
   },
   {
-    question: "I have another question",
+    question: "How is this different from just taking a regular screenshot?",
     answer: (
-      <div className="space-y-2 leading-relaxed">Cool, contact us by email</div>
+      <p>
+        Regular screenshots force you to write &quot;see the bar chart in the bottom-left, below the revenue header...&quot; With numbered annotations, you just say &quot;fix #1&quot; or &quot;change the color at #3.&quot; Your team sees exactly what you mean — zero guesswork.
+      </p>
+    ),
+  },
+  {
+    question: "Do I need the Pro version?",
+    answer: (
+      <p>
+        The free version gives you 5 annotated markups per day — enough for most individual reviewers. Upgrade to Pro if your team reviews presentations daily and needs unlimited markups with watermark-free exports.
+      </p>
+    ),
+  },
+  {
+    question: "Can my team use this without installing anything?",
+    answer: (
+      <p>
+        Only the person creating annotations needs the extension. When you export, the annotations are baked into the image. Share the PNG via email, Slack, or Teams — recipients see your feedback without installing anything.
+      </p>
+    ),
+  },
+  {
+    question: "Can I get a refund if it doesn't work for me?",
+    answer: (
+      <p>
+        Yes. Request a full refund within 7 days of purchase. Just email support@plsfixthx.com and we&apos;ll process it immediately.
+      </p>
     ),
   },
 ];

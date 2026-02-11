@@ -1,10 +1,10 @@
-import { Inter } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import { getSEOTags } from "@/libs/seo";
 import ClientLayout from "@/components/LayoutClient";
 import config from "@/config";
 import "./globals.css";
 
-const font = Inter({ subsets: ["latin"] });
+const font = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"] });
 
 export const viewport = {
 	// Will use the primary color of your theme to show a nice theme color in the URL bar of supported browsers

@@ -8,7 +8,7 @@ const ExtensionInstall = () => {
           Get Started in 30 Seconds
         </h2>
         <p className="text-lg opacity-80 leading-relaxed max-w-2xl mx-auto">
-          Install the free Chrome extension and start annotating screenshots immediately. 
+          Install the free Chrome extension and start marking up slides and dashboards immediately.
           No account required to get started.
         </p>
       </div>
@@ -22,7 +22,7 @@ const ExtensionInstall = () => {
             <div>
               <h3 className="font-semibold text-lg mb-2">Install from Chrome Web Store</h3>
               <p className="text-base-content/70 mb-4">
-                Click the button below to add PLSFIX-THX to your Chrome browser. 
+                Click the button below to add PLSFIX-THX to your Chrome browser.
                 It&apos;s free and takes just one click.
               </p>
               <a
@@ -44,10 +44,10 @@ const ExtensionInstall = () => {
               2
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Start Taking Screenshots</h3>
+              <h3 className="font-semibold text-lg mb-2">Capture Any Slide or Dashboard</h3>
               <p className="text-base-content/70">
-                Use keyboard shortcuts (Alt+Shift+S for area selection, Alt+Shift+F for full page) 
-                or click the extension icon to capture any part of any website.
+                Use keyboard shortcuts (Alt+Shift+S for area selection, Alt+Shift+F for full page)
+                or click the extension icon to capture any PowerPoint slide, Power BI report, or web-based presentation.
               </p>
             </div>
           </div>
@@ -57,10 +57,9 @@ const ExtensionInstall = () => {
               3
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Annotate & Export</h3>
+              <h3 className="font-semibold text-lg mb-2">Annotate & Share with Your Team</h3>
               <p className="text-base-content/70">
-                Add numbered annotations with notes, drag them around, and export to PNG. 
-                Upgrade to Premium for advanced PDF exports and cloud storage.
+                Add numbered annotations pointing to exact elements — a misaligned chart, a wrong color, a missing data label. Export to PNG and share via email, Slack, or Teams. Everyone sees exactly what you mean.
               </p>
             </div>
           </div>
@@ -68,7 +67,7 @@ const ExtensionInstall = () => {
 
         <div className="relative">
           <div className="bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl p-8">
-            {/* Placeholder for extension screenshot/demo */}
+            {/* TODO: Replace with actual product screenshot/video showing a PowerPoint slide being annotated */}
             <div className="aspect-video bg-base-100 rounded-lg shadow-2xl flex items-center justify-center">
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -90,19 +89,19 @@ const ExtensionInstall = () => {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            <span>500,000+ Users</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-            <span>4.8/5 Stars</span>
+            <span>Works with PowerPoint & Power BI</span>
           </div>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <span>Privacy Focused</span>
+            <span>100% Local Processing</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+            </svg>
+            <span>Share in Under 10 Seconds</span>
           </div>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

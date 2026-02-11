@@ -1,11 +1,9 @@
-import themes from "daisyui/src/theming/themes";
-
 const config = {
   // REQUIRED
   appName: "PLSFIX-THX",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "Professional Chrome extension for screenshot annotation with advanced export features and collaboration tools.",
+    "Mark up PowerPoint slides and Power BI dashboards with numbered annotations. Give precise, visual feedback on presentations and reports — no more vague emails or endless revision cycles.",
   // REQUIRED (no https://, not trialing slash at the end, just the naked domain)
   domainName: "plsfixthx.com",
   crisp: {
@@ -20,13 +18,13 @@ const config = {
       {
         // Free plan for display purposes (no priceId needed)
         name: "Free",
-        description: "Perfect for personal use and getting started",
+        description: "Perfect for occasional slide reviews and getting started",
         price: 0,
         features: [
           {
-            name: "5 screenshots per day",
+            name: "5 markups per day",
           },
-          { name: "Basic annotations" },
+          { name: "Numbered annotations" },
           { name: "Watermarked exports" },
           { name: "PNG export" },
           { name: "Chrome extension" },
@@ -41,15 +39,15 @@ const config = {
             ? "price_1Niyy5AxyNprDp7iZIqEyD2h"
             : "price_lifetime_purchase",
         name: "Lifetime Pro",
-        description: "One-time purchase for unlimited professional use",
+        description: "Unlimited markups for teams who review presentations daily",
         price: 39,
         priceAnchor: 99,
         interval: "one-time",
         features: [
           {
-            name: "Unlimited screenshots",
+            name: "Unlimited markups",
           },
-          { name: "All annotation features" },
+          { name: "All annotation tools" },
           { name: "No watermarks" },
           { name: "PDF, PNG & HTML export" },
           { name: "Priority support" },
@@ -74,10 +72,10 @@ const config = {
   },
   colors: {
     // REQUIRED — The DaisyUI theme to use (added to the main layout.js). Leave blank for default (light & dark mode). If you any other theme than light/dark, you need to add it in config.tailwind.js in daisyui.themes.
-    theme: "light",
+    theme: "corporate",
     // REQUIRED — This color will be reflected on the whole app outside of the document (loading bar, Chrome tabs, etc..). By default it takes the primary color from your DaisyUI theme (make sure to update your the theme name after "data-theme=")
     // OR you can just do this to use a custom color: main: "#f37055". HEX only.
-    main: themes["light"]["primary"],
+    main: "#1B2A4A",
   },
   auth: {
     // REQUIRED — the path to log in users. It's use to protect private routes (like /dashboard). It's used in apiClient (/libs/api.js) upon 401 errors from our API
