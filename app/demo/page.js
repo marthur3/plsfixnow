@@ -4,6 +4,7 @@ import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { getSEOTags } from "@/libs/seo";
+import config from "@/config";
 
 // Dynamically import ImageAnnotator to avoid SSR issues
 const ImageAnnotator = dynamic(() => import('@/components/ui/ImageAnnotator'), {
@@ -93,18 +94,24 @@ export default function DemoPage() {
               <span className="text-xs text-gray-600">
                 Want screen capture + keyboard shortcuts?
               </span>
-              <a
-                href="https://chrome.google.com/webstore/detail/plsfix-thx"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.69 5.05 1.83L12 12l-5.05-6.17A7.96 7.96 0 0 1 12 4zm-8 8c0-1.93.69-3.68 1.83-5.05L12 12l-6.17 5.05A7.96 7.96 0 0 1 4 12zm8 8a7.96 7.96 0 0 1-5.05-1.83L12 12l5.05 6.17A7.96 7.96 0 0 1 12 20z" fill="currentColor" opacity="0.7"/>
-                </svg>
-                Install Chrome Extension
-              </a>
+              {config.extensionComingSoon ? (
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/50 text-white/70 text-xs font-medium rounded-lg cursor-not-allowed">
+                  Coming Soon
+                </span>
+              ) : (
+                <a
+                  href="https://chrome.google.com/webstore/detail/plsfix-thx"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.69 5.05 1.83L12 12l-5.05-6.17A7.96 7.96 0 0 1 12 4zm-8 8c0-1.93.69-3.68 1.83-5.05L12 12l-6.17 5.05A7.96 7.96 0 0 1 4 12zm8 8a7.96 7.96 0 0 1-5.05-1.83L12 12l5.05 6.17A7.96 7.96 0 0 1 12 20z" fill="currentColor" opacity="0.7"/>
+                  </svg>
+                  Install Chrome Extension
+                </a>
+              )}
             </div>
           </div>
         </div>

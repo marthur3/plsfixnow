@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/libs/supabase/client";
 import toast from "react-hot-toast";
 import config from "@/config";
 
 // This a login/singup page for Supabase Auth.
 // Successfull login redirects to /api/auth/callback where the Code Exchange is processed (see app/api/auth/callback/route.js).
+// When ?from=extension is present, redirects through /api/extension/auth/callback instead (returns user to Chrome extension).
 export default function Login() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
+
+  const isExtensionAuth = searchParams.get("from") === "extension";
 
   const handleSignup = async (e, options) => {
     e?.preventDefault();
@@ -21,7 +26,9 @@ export default function Login() {
 
     try {
       const { type, provider } = options;
-      const redirectURL = window.location.origin + "/api/auth/callback";
+      // Use extension auth callback when signing in from the Chrome extension
+      const callbackPath = isExtensionAuth ? "/api/extension/auth/callback" : "/api/auth/callback";
+      const redirectURL = window.location.origin + callbackPath;
 
       if (type === "oauth") {
         await supabase.auth.signInWithOAuth({

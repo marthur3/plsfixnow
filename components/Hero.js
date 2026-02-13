@@ -18,14 +18,20 @@ const Hero = () => {
           >
             See It In Action
           </a>
-          <a
-            href="https://chrome.google.com/webstore/detail/plsfix-thx"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-primary btn-wide"
-          >
-            Get Started Free
-          </a>
+          {config.extensionComingSoon ? (
+            <span className="btn btn-primary btn-wide btn-disabled !bg-primary/60">
+              Coming Soon
+            </span>
+          ) : (
+            <a
+              href="https://chrome.google.com/webstore/detail/plsfix-thx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary btn-wide"
+            >
+              Get Started Free
+            </a>
+          )}
         </div>
         <div className="text-center sm:text-left">
           <div className="flex flex-wrap gap-4 items-center">

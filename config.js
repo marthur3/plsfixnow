@@ -1,4 +1,6 @@
 const config = {
+  // Set to false when the Chrome extension is live on the Web Store
+  extensionComingSoon: true,
   // REQUIRED
   appName: "PLSFIX-THX",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)

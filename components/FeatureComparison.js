@@ -1,3 +1,5 @@
+import config from "@/config";
+
 const FeatureComparison = () => {
   const features = [
     {
@@ -135,14 +137,20 @@ const FeatureComparison = () => {
 
       <div className="text-center mt-12">
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-md mx-auto">
-          <a
-            href="https://chrome.google.com/webstore/detail/plsfix-thx"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-outline btn-wide"
-          >
-            Start Free
-          </a>
+          {config.extensionComingSoon ? (
+            <span className="btn btn-outline btn-wide btn-disabled">
+              Coming Soon
+            </span>
+          ) : (
+            <a
+              href="https://chrome.google.com/webstore/detail/plsfix-thx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline btn-wide"
+            >
+              Start Free
+            </a>
+          )}
           <a
             href="#pricing"
             className="btn btn-primary btn-wide"

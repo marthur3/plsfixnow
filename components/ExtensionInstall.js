@@ -1,4 +1,5 @@
 import Image from "next/image";
+import config from "@/config";
 
 const ExtensionInstall = () => {
   return (
@@ -25,18 +26,24 @@ const ExtensionInstall = () => {
                 Click the button below to add PLSFIX-THX to your Chrome browser.
                 It&apos;s free and takes just one click.
               </p>
-              <a
-                href="https://chrome.google.com/webstore/detail/plsfix-thx"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.69 5.05 1.83L12 12l-5.05-6.17A7.96 7.96 0 0 1 12 4zm-8 8c0-1.93.69-3.68 1.83-5.05L12 12l-6.17 5.05A7.96 7.96 0 0 1 4 12zm8 8a7.96 7.96 0 0 1-5.05-1.83L12 12l5.05 6.17A7.96 7.96 0 0 1 12 20z" fill="currentColor" opacity="0.7"/>
-                </svg>
-                Add to Chrome - Free
-              </a>
+              {config.extensionComingSoon ? (
+                <span className="btn btn-primary btn-disabled !bg-primary/60">
+                  Coming Soon
+                </span>
+              ) : (
+                <a
+                  href="https://chrome.google.com/webstore/detail/plsfix-thx"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.69 5.05 1.83L12 12l-5.05-6.17A7.96 7.96 0 0 1 12 4zm-8 8c0-1.93.69-3.68 1.83-5.05L12 12l-6.17 5.05A7.96 7.96 0 0 1 4 12zm8 8a7.96 7.96 0 0 1-5.05-1.83L12 12l5.05 6.17A7.96 7.96 0 0 1 12 20z" fill="currentColor" opacity="0.7"/>
+                  </svg>
+                  Add to Chrome - Free
+                </a>
+              )}
             </div>
           </div>
 

@@ -21,14 +21,20 @@ const CTA = () => {
             Give your team precise visual feedback on every slide and dashboard. Install the free extension and cut your revision cycles in half.
           </p>
 
-          <a
-            href="https://chrome.google.com/webstore/detail/plsfix-thx"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-secondary btn-wide"
-          >
-            Install Free Extension
-          </a>
+          {config.extensionComingSoon ? (
+            <span className="btn btn-secondary btn-wide btn-disabled !bg-secondary/60">
+              Coming Soon
+            </span>
+          ) : (
+            <a
+              href="https://chrome.google.com/webstore/detail/plsfix-thx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary btn-wide"
+            >
+              Install Free Extension
+            </a>
+          )}
         </div>
       </div>
     </section>

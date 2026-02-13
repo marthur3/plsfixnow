@@ -86,14 +86,20 @@ const Pricing = () => {
                 )}
                 <div className="space-y-2">
                   {plan.isFree ? (
-                    <a
-                      href="https://chrome.google.com/webstore/detail/plsfix-thx"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-outline btn-block"
-                    >
-                      Install Extension
-                    </a>
+                    config.extensionComingSoon ? (
+                      <span className="btn btn-outline btn-block btn-disabled">
+                        Coming Soon
+                      </span>
+                    ) : (
+                      <a
+                        href="https://chrome.google.com/webstore/detail/plsfix-thx"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline btn-block"
+                      >
+                        Install Extension
+                      </a>
+                    )
                   ) : (
                     <ButtonCheckout priceId={plan.priceId} />
                   )}
