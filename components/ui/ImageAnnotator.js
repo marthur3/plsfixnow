@@ -1997,7 +1997,7 @@ const exportButtons = (
                           value={noteText}
                           onChange={(e) => setNoteText(e.target.value)}
                           placeholder="Add a note... (press Enter to save)"
-                          className="w-full px-4 py-3 border rounded-lg text-base"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base bg-white text-gray-900 placeholder-gray-400"
                           autoFocus
                         />
                         <div className="flex justify-end">

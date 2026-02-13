@@ -57,7 +57,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
           <X className="w-4 h-4" />
         </button>
         
-        <h2 className="text-xl font-semibold mb-4">
+        <h2 className="text-xl font-semibold mb-4 text-gray-900">
           {type === 'share' ? 'Share Options' : 'Export Options'}
         </h2>
         
@@ -70,7 +70,7 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
               <select
                 value={shareFormat}
                 onChange={(e) => setShareFormat(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
               >
                 <option value="pdf">PDF Document</option>
                 <option value="png">Image (PNG)</option>
@@ -127,12 +127,12 @@ const ExportDialog = ({ onSubmit, onClose, onShare, defaultName, canShare, type 
                   name="filename"
                   defaultValue={defaultName}
                   required
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400"
                   placeholder="Enter filename"
                 />
                 <select
                   name="format"
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
                   defaultValue="pdf"
                 >
                   <option value="pdf">PDF Document (with annotations)</option>
