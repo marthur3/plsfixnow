@@ -9,10 +9,19 @@ import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
+import { getSEOTags, renderSchemaTags } from "@/libs/seo";
+
+export const metadata = getSEOTags({
+  title: "PLSFIX-THX — Give Your AI Agent Perfect Context",
+  description:
+    "Capture your screen, add numbered annotations, and share crystal-clear feedback with ChatGPT, Claude, Cursor, or any AI tool. Free Chrome extension.",
+  canonicalUrlRelative: "/",
+});
 
 export default function Home() {
   return (
     <>
+      {renderSchemaTags()}
       <Suspense>
         <Header />
       </Suspense>

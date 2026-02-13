@@ -1,10 +1,6 @@
 import config from "@/config";
 
-// These are all the SEO tags you can add to your pages.
-// It prefills data with default title/description/OG, etc.. and you can cusotmize it for each page.
-// It's already added in the root layout.js so you don't have to add it to every pages
-// But I recommend to set the canonical URL for each page (export const metadata = getSEOTags({canonicalUrlRelative: "/"});)
-// See https://shipfa.st/docs/features/seo
+// SEO tags for all pages. Customize per page via getSEOTags() params.
 export const getSEOTags = ({
   title,
   description,
@@ -19,7 +15,20 @@ export const getSEOTags = ({
     // up to 160 characters (how does your app help the user?)
     description: description || config.appDescription,
     // some keywords separated by commas. by default it will be your app name
-    keywords: keywords || [config.appName],
+    keywords: keywords || [
+      "screenshot annotation tool",
+      "annotate screenshots for AI",
+      "Chrome extension screenshot",
+      "numbered annotations",
+      "visual feedback tool",
+      "AI context screenshots",
+      "ChatGPT screenshot tool",
+      "Claude screenshot annotations",
+      "Cursor IDE visual feedback",
+      "screen capture annotate",
+      "bug report screenshots",
+      "PLSFIX-THX",
+    ],
     applicationName: config.appName,
     // set a base URL prefix for other fields that require a fully qualified URL (.e.g og:image: og:image: 'https://yourdomain.com/share.png' => '/share.png')
     metadataBase: new URL(
@@ -64,23 +73,17 @@ export const getSEOTags = ({
   };
 };
 
-// Strctured Data for Rich Results on Google. Learn more: https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data
-// Find your type here (SoftwareApp, Book...): https://developers.google.com/search/docs/appearance/structured-data/search-gallery
-// Use this tool to check data is well structure: https://search.google.com/test/rich-results
-// You don't have to use this component, but it increase your chances of having a rich snippet on Google.
-// I recommend this one below to your /page.js for software apps: It tells Google your AppName is a Software, and it has a rating of 4.8/5 from 12 reviews.
-// Fill the fields with your own data
-// See https://shipfa.st/docs/features/seo
+// Structured Data for Rich Results on Google
 export const renderSchemaTags = () => {
   return (
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
         __html: JSON.stringify({
-          "@context": "http://schema.org",
+          "@context": "https://schema.org",
           "@type": "SoftwareApplication",
           name: config.appName,
-          description: config.appDescription,
+          description: "Give your AI agent perfect context. Capture your screen, add numbered annotations, and share crystal-clear visual feedback with ChatGPT, Claude, Cursor, or any AI tool in seconds.",
           image: `https://${config.domainName}/icon.png`,
           url: `https://${config.domainName}/`,
           author: {
@@ -88,14 +91,24 @@ export const renderSchemaTags = () => {
             name: "PLSFIX-THX",
           },
           datePublished: "2025-01-01",
-          applicationCategory: "BusinessApplication",
+          applicationCategory: "BrowserApplication",
+          operatingSystem: "Chrome",
+          browserRequirements: "Requires Google Chrome 88+",
           offers: [
+            {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "USD",
+              description: "Free plan — 5 annotated screenshots per day",
+            },
             {
               "@type": "Offer",
               price: "39.00",
               priceCurrency: "USD",
+              description: "Lifetime Pro — unlimited screenshots, no watermarks",
             },
           ],
+          featureList: "Screenshot capture, Numbered annotations, PNG export, PDF export, HTML export, Works with ChatGPT, Works with Claude, Works with Cursor, Local processing, No uploads required",
         }),
       }}
     ></script>

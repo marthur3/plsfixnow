@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://plsfix-thx.com
+
+# Sitemaps
+Sitemap: https://plsfix-thx.com/sitemap.xml

@@ -1,0 +1,37 @@
+# PLSFIX-THX
+
+> Give your AI agent perfect context. A free Chrome extension for screenshot annotation.
+
+## What is PLSFIX-THX?
+
+PLSFIX-THX is a Chrome extension that helps developers communicate with AI tools like ChatGPT, Claude, Cursor, and Windsurf. Capture any screen, add numbered annotations pointing to exact locations, and export AI-ready images in seconds.
+
+## Key Features
+
+- One-click screenshot capture (area or full page)
+- Numbered annotations with text notes
+- Drag-and-drop annotation positioning
+- Export to PNG, PDF, and HTML
+- 100% local processing — no images uploaded to servers
+- Works with any AI tool that accepts images
+
+## How It Works
+
+1. Press Alt+Shift+S to capture an area (or Alt+Shift+F for full page)
+2. Click on the image to add numbered annotations with notes
+3. Export and paste into your AI tool
+4. Say "fix #1" or "change #2 to blue" — your AI sees exactly what you mean
+
+## Pricing
+
+- Free: 5 annotated screenshots per day, watermarked exports
+- Lifetime Pro ($39 one-time): Unlimited screenshots, no watermarks, PDF/HTML export, all annotation tools, lifetime updates
+
+## Links
+
+- Website: https://plsfix-thx.com
+- Demo: https://plsfix-thx.com/demo
+- Pricing: https://plsfix-thx.com/#pricing
+- Privacy Policy: https://plsfix-thx.com/privacy-policy
+- Terms of Service: https://plsfix-thx.com/tos
+- Contact: contact.givemethanks@gmail.com
