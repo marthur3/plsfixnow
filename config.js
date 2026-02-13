@@ -5,7 +5,7 @@ const config = {
   appDescription:
     "Mark up PowerPoint slides and Power BI dashboards with numbered annotations. Give precise, visual feedback on presentations and reports — no more vague emails or endless revision cycles.",
   // REQUIRED (no https://, not trialing slash at the end, just the naked domain)
-  domainName: "plsfixthx.com",
+  domainName: "plsfix-thx.com",
   crisp: {
     // Crisp website ID. IF YOU DON'T USE CRISP: just remove this => Then add a support email in this config file (resend.supportEmail) otherwise customer support won't work.
     id: "",
@@ -64,11 +64,11 @@ const config = {
   },
   resend: {
     // REQUIRED — Email 'From' field to be used when sending magic login links
-    fromNoReply: `PLSFIX-THX <noreply@plsfixthx.com>`,
+    fromNoReply: `PLSFIX-THX <noreply@plsfix-thx.com>`,
     // REQUIRED — Email 'From' field to be used when sending other emails, like abandoned carts, updates etc..
-    fromAdmin: `PLSFIX-THX Support <support@plsfixthx.com>`,
+    fromAdmin: `PLSFIX-THX Support <support@plsfix-thx.com>`,
     // Email shown to customer if need support. Leave empty if not needed => if empty, set up Crisp above, otherwise you won't be able to offer customer support."
-    supportEmail: "support@plsfixthx.com",
+    supportEmail: "support@plsfix-thx.com",
   },
   colors: {
     // REQUIRED — The DaisyUI theme to use (added to the main layout.js). Leave blank for default (light & dark mode). If you any other theme than light/dark, you need to add it in config.tailwind.js in daisyui.themes.

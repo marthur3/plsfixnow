@@ -39,7 +39,7 @@ const faqList = [
     question: "Can I get a refund if it doesn't work for me?",
     answer: (
       <p>
-        Yes. Request a full refund within 7 days of purchase. Just email support@plsfixthx.com and we&apos;ll process it immediately.
+        Yes. Request a full refund within 7 days of purchase. Just email support@plsfix-thx.com and we&apos;ll process it immediately.
       </p>
     ),
   },

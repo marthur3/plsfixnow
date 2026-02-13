@@ -54,7 +54,7 @@ export async function GET(req) {
     if (extensionId) {
       redirectUrl = new URL(`chrome-extension://${extensionId}/editor.html`);
     } else {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://plsfixthx.com';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://plsfix-thx.com';
       redirectUrl = new URL(`${siteUrl}/auth/extension/success`);
     }
 
@@ -80,7 +80,7 @@ export async function GET(req) {
     if (extensionId) {
       errorUrl = new URL(`chrome-extension://${extensionId}/editor.html`);
     } else {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://plsfixthx.com';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://plsfix-thx.com';
       errorUrl = new URL(`${siteUrl}/auth/extension/success`);
     }
 
