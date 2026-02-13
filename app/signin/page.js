@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/libs/supabase/client";
 import toast from "react-hot-toast";
@@ -11,6 +11,14 @@ import config from "@/config";
 // Successfull login redirects to /api/auth/callback where the Code Exchange is processed (see app/api/auth/callback/route.js).
 // When ?from=extension is present, redirects through /api/extension/auth/callback instead (returns user to Chrome extension).
 export default function Login() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
