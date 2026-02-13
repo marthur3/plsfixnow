@@ -99,8 +99,9 @@ export default function DemoPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0C5.374 0 0 5.373 0 12s5.374 12 12 12c6.627 0 12-5.373 12-12S18.627 0 12 0zm5.568 8.16c-.169 1.858-.896 3.616-2.001 5.06-.686-.395-1.457-.623-2.286-.623a5.007 5.007 0 0 0-2.228.527A6.985 6.985 0 0 1 12 5.163c1.377 0 2.666.402 3.751 1.099l1.817-1.817zm-8.569 9.96A6.965 6.965 0 0 1 5.163 12c0-1.377.402-2.666 1.099-3.751l1.817 1.817c-1.105 1.444-1.832 3.202-2.001 5.06a5.007 5.007 0 0 0 2.286.623c.789 0 1.52-.228 2.228-.527zM12 18.837a6.965 6.965 0 0 1-6.837-3.836 5.007 5.007 0 0 0 .623-2.286c0-.789-.228-1.52-.527-2.228A6.985 6.985 0 0 1 12 5.163v13.674z"/>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.69 5.05 1.83L12 12l-5.05-6.17A7.96 7.96 0 0 1 12 4zm-8 8c0-1.93.69-3.68 1.83-5.05L12 12l-6.17 5.05A7.96 7.96 0 0 1 4 12zm8 8a7.96 7.96 0 0 1-5.05-1.83L12 12l5.05 6.17A7.96 7.96 0 0 1 12 20z" fill="currentColor" opacity="0.7"/>
                 </svg>
                 Install Chrome Extension
               </a>
