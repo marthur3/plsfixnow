@@ -1,35 +1,30 @@
-# PLSFIX-THX - Professional Screenshot Annotator
+# PLSFIX-THX - Give Your AI Agent Perfect Context
 
-## Transform Your Screenshots Into Professional Documentation
+## Stop Typing. Start Showing.
 
-**PLSFIX-THX** is a powerful Chrome extension that revolutionizes screenshot annotation. Capture, annotate, and export professional documentation with numbered annotations, notes, and multiple export formats.
+**PLSFIX-THX** is a Chrome extension that helps solo developers and small teams communicate perfectly with AI agents. Capture your screen, add numbered annotations pointing to exact locations, and share crystal-clear feedback with Claude, ChatGPT, or any AI in seconds.
 
 ## 🚀 Key Features
 
-### 📸 Advanced Screenshot Capture
-- **Quick Capture**: One-click full page or area selection screenshots
-- **Smart Selection**: Precise area capture with crosshair overlay (Alt+Shift+S)
-- **Full Page Capture**: Complete page screenshots including content below the fold (Alt+Shift+F)
-- **Recent Images Grid**: Quick access to your last 6 captured screenshots
+### ⚡ Instant Screen Capture
+- **One-Click Capture**: Use keyboard shortcuts (Alt+Shift+S for area, Alt+Shift+F for full page) or the extension icon
+- **No Delays**: Start annotating immediately—no uploading, no waiting
+- **Capture Anywhere**: Works on any website you're viewing
 
-### ✏️ Professional Annotation System
-- **Numbered Markers**: Clean, professional numbered annotations
-- **Expandable Notes**: Rich text notes for detailed explanations
-- **Drag & Drop**: Easily reposition annotations anywhere on your images
-- **Completion Tracking**: Mark annotations as completed for task management
-- **Multi-Image Support**: Annotate and manage multiple screenshots simultaneously
+### 🎯 Numbered Annotations That Point Exactly
+- **Precise Markers**: Click anywhere to add numbered markers with text notes
+- **No Confusion**: Your AI sees exactly what you're pointing at
+- **Drag & Drop**: Reposition annotations to point at the exact location
 
-### 📤 Multiple Export Formats
-- **PDF Export**: Professional print-ready documents with grid layout
-- **PNG Options**: Single combined image, separate files, or individual exports
-- **HTML Format**: Printable web format for sharing and archiving
-- **Clipboard Integration**: Copy annotated images directly to clipboard
+### 🤖 Works with Any AI Tool
+- **Universal Compatibility**: ChatGPT, Claude, Gemini, Cursor, Windsurf—if it accepts images, it works
+- **Export to PNG**: Annotations are baked into the image
+- **Copy and Paste**: Share in seconds
 
-### ⚡ Productivity Features
-- **Keyboard Shortcuts**: Comprehensive shortcuts for all major functions (Press F1 for help)
-- **Zoom & Pan**: Advanced viewport controls with mouse and keyboard navigation
-- **Recent Images**: Popup interface shows last 6 screenshots for quick access
-- **Smart Storage**: Automatically maintains optimal storage usage
+### 🚀 Built for Speed
+- **Under 10 Seconds**: From screenshot to AI-ready image
+- **100% Local**: Everything happens in your browser—no uploads, no servers
+- **Privacy First**: Nothing leaves your machine
 
 ## 📥 Installation
 
@@ -76,20 +71,20 @@
 
 ## ❓ Frequently Asked Questions
 
-### How many screenshots can I store?
-The extension automatically maintains your last 10 screenshots to optimize storage usage while keeping your recent work accessible.
+### Which AI tools work with this?
+Any AI that accepts images. ChatGPT, Claude, Gemini, Cursor, Windsurf—if it has vision capabilities, it works. Just export your annotated screenshot and paste it into your AI chat.
 
-### Can I use this extension on any website?
-Yes! PLSFIX-THX works on all websites. The extension intelligently captures content from any web page you're viewing.
+### How is this different from just taking a regular screenshot?
+Regular screenshots require you to type out "see that button on the left, below the header, next to the icon..." With numbered annotations, you just say "fix the issue at #1" or "change #2 to blue." Your AI sees exactly what you mean.
 
-### What image formats are supported for upload?
-You can upload PNG, JPG, GIF, and other common image formats. The extension also captures screenshots in high-quality PNG format.
+### Do I need the Pro version to use this with AI?
+Nope. The free version gives you 5 annotated screenshots per day, which is plenty for most developers. Upgrade to Pro for unlimited screenshots and watermark-free exports.
+
+### Does this work on any website?
+Yes. Capture screenshots from any website you're viewing. Perfect for debugging your own apps, reporting issues, or getting design feedback from your AI.
 
 ### Are my screenshots stored securely?
 All screenshots and annotations are stored locally in your Chrome browser. Nothing is uploaded to external servers, ensuring your privacy and security.
-
-### Can I edit annotations after creating them?
-Absolutely! You can edit annotation notes, drag them to new positions, mark them as complete, or delete them entirely.
 
 ## 🔧 Keyboard Shortcuts
 
@@ -125,5 +120,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Ready to transform your screenshots into professional documentation?**  
-[Install PLSFIX-THX from Chrome Web Store](chrome://extensions) *(Link pending publication)*
+**Ready to give your AI agent perfect context?**
+Install the free Chrome extension and start shipping faster today.

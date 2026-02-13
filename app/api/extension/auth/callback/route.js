@@ -47,28 +47,46 @@ export async function GET(req) {
       console.error("Profile error:", profileError);
     }
 
-    // Create redirect URL back to extension with user info
-    const redirectUrl = new URL('chrome-extension://extension-id/editor.html');
+    // Build redirect URL — use Chrome extension if ID is configured, otherwise landing page success page
+    const extensionId = process.env.CHROME_EXTENSION_ID;
+    let redirectUrl;
+
+    if (extensionId) {
+      redirectUrl = new URL(`chrome-extension://${extensionId}/editor.html`);
+    } else {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://plsfixthx.com';
+      redirectUrl = new URL(`${siteUrl}/auth/extension/success`);
+    }
+
     redirectUrl.searchParams.set('auth', 'success');
     redirectUrl.searchParams.set('user_id', user.id);
     redirectUrl.searchParams.set('email', user.email);
     redirectUrl.searchParams.set('has_access', profile?.has_access ? 'true' : 'false');
-    
+
     if (authData.session?.access_token) {
       redirectUrl.searchParams.set('token', authData.session.access_token);
     }
 
-    // Redirect back to extension
+    // Redirect back to extension (or success page)
     return NextResponse.redirect(redirectUrl.toString());
 
   } catch (error) {
     console.error("Extension auth callback error:", error);
     
-    // Redirect to extension with error
-    const errorUrl = new URL('chrome-extension://extension-id/editor.html');
+    // Redirect with error
+    const extensionId = process.env.CHROME_EXTENSION_ID;
+    let errorUrl;
+
+    if (extensionId) {
+      errorUrl = new URL(`chrome-extension://${extensionId}/editor.html`);
+    } else {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://plsfixthx.com';
+      errorUrl = new URL(`${siteUrl}/auth/extension/success`);
+    }
+
     errorUrl.searchParams.set('auth', 'error');
     errorUrl.searchParams.set('message', 'Authentication failed');
-    
+
     return NextResponse.redirect(errorUrl.toString());
   }
 }

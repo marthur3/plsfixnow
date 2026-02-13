@@ -37,7 +37,7 @@ const config = {
         priceId:
           process.env.NODE_ENV === "development"
             ? "price_1Niyy5AxyNprDp7iZIqEyD2h"
-            : "price_lifetime_purchase",
+            : process.env.STRIPE_PRICE_ID || "price_lifetime_purchase",
         name: "Lifetime Pro",
         description: "Unlimited markups for teams who review presentations daily",
         price: 39,
