@@ -89,7 +89,7 @@ We may update this Privacy Policy from time to time to reflect changes in our pr
 
 If you have any questions, concerns, or requests related to this Privacy Policy, you can contact us at:
 
-Email: support@plsfix-thx.com
+Email: contact.givemethanks@gmail.com
 
 By using PLSFIX-THX, you consent to the terms of this Privacy Policy.`}
         </pre>

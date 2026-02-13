@@ -51,7 +51,7 @@ PLSFIX-THX offers a free tier with limited daily usage (5 annotated screenshots 
 
 3. Refund Policy
 
-We offer a full refund within 7 days of purchasing a Pro license. To request a refund, contact us at support@plsfix-thx.com.
+We offer a full refund within 7 days of purchasing a Pro license. To request a refund, contact us at contact.givemethanks@gmail.com.
 
 4. Local Processing and Privacy
 
@@ -77,7 +77,7 @@ These Terms are governed by the laws of the United States.
 
 We may update these Terms from time to time. Users will be notified of any changes via email.
 
-For any questions or concerns regarding these Terms of Service, please contact us at support@plsfix-thx.com.
+For any questions or concerns regarding these Terms of Service, please contact us at contact.givemethanks@gmail.com.
 
 Thank you for using PLSFIX-THX!`}
         </pre>

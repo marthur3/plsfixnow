@@ -29,5 +29,5 @@ npm start
 
 ## Support
 
-Reach out at support@plsfix-thx.com
+Reach out at contact.givemethanks@gmail.com
 
