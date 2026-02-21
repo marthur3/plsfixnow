@@ -135,7 +135,7 @@ function LoginContent() {
               />
             </svg>
           )}
-          Sign-up with Google
+          Continue with Google
         </button>
 
         <div className="divider text-xs text-base-content/50 font-medium">
@@ -164,7 +164,7 @@ function LoginContent() {
             {isLoading && (
               <span className="loading loading-spinner loading-xs"></span>
             )}
-            Send Magic Link
+            Send Sign-In Link
           </button>
         </form>
       </div>
