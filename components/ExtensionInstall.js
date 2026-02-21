@@ -32,7 +32,7 @@ const ExtensionInstall = () => {
                 </span>
               ) : (
                 <a
-                  href="https://chrome.google.com/webstore/detail/plsfix-thx"
+                  href="https://chromewebstore.google.com/detail/heijdkcfjjhcbkhikfhgcmnigmceokjj"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-primary"

@@ -100,7 +100,7 @@ export default function DemoPage() {
                 </span>
               ) : (
                 <a
-                  href="https://chrome.google.com/webstore/detail/plsfix-thx"
+                  href="https://chromewebstore.google.com/detail/heijdkcfjjhcbkhikfhgcmnigmceokjj"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors"
