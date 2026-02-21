@@ -24,6 +24,7 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const isExtensionAuth = searchParams.get("from") === "extension";
 
@@ -39,6 +40,7 @@ function LoginContent() {
       const redirectURL = window.location.origin + callbackPath;
 
       if (type === "oauth") {
+        setIsRedirecting(true);
         await supabase.auth.signInWithOAuth({
           provider,
           options: {
@@ -63,6 +65,18 @@ function LoginContent() {
       setIsLoading(false);
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <main className="min-h-screen flex items-center justify-center" data-theme={config.colors.theme}>
+        <div className="text-center">
+          <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
+          <h2 className="text-xl font-semibold mt-4">Redirecting to Google Sign-In...</h2>
+          <p className="text-base-content/60 mt-2">You&apos;ll be redirected back automatically after signing in.</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="p-8 md:p-24" data-theme={config.colors.theme}>
