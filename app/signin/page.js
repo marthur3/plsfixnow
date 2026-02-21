@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/libs/supabase/client";
 import toast from "react-hot-toast";
@@ -66,13 +66,33 @@ function LoginContent() {
     }
   };
 
+  // Timeout for redirect — if OAuth doesn't redirect within 15s, show retry option
+  const [redirectTimedOut, setRedirectTimedOut] = useState(false);
+  useEffect(() => {
+    if (!isRedirecting) return;
+    const timer = setTimeout(() => setRedirectTimedOut(true), 15000);
+    return () => clearTimeout(timer);
+  }, [isRedirecting]);
+
   if (isRedirecting) {
     return (
       <main className="min-h-screen flex items-center justify-center" data-theme={config.colors.theme}>
         <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
-          <h2 className="text-xl font-semibold mt-4">Redirecting to Google Sign-In...</h2>
-          <p className="text-base-content/60 mt-2">You&apos;ll be redirected back automatically after signing in.</p>
+          {redirectTimedOut ? (
+            <>
+              <h2 className="text-xl font-semibold mb-2">Redirect taking too long?</h2>
+              <p className="text-base-content/60 mb-4">The sign-in redirect may have been blocked by your browser.</p>
+              <button className="btn btn-primary" onClick={() => { setIsRedirecting(false); setRedirectTimedOut(false); }}>
+                Try Again
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
+              <h2 className="text-xl font-semibold mt-4">Redirecting to Google Sign-In...</h2>
+              <p className="text-base-content/60 mt-2">You&apos;ll be redirected back automatically after signing in.</p>
+            </>
+          )}
         </div>
       </main>
     );

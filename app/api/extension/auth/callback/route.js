@@ -63,10 +63,6 @@ export async function GET(req) {
     redirectUrl.searchParams.set('email', user.email);
     redirectUrl.searchParams.set('has_access', profile?.has_access ? 'true' : 'false');
 
-    if (authData.session?.access_token) {
-      redirectUrl.searchParams.set('token', authData.session.access_token);
-    }
-
     // Redirect back to extension (or success page)
     return NextResponse.redirect(redirectUrl.toString());
 
