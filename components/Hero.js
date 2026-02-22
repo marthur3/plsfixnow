@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import config from "@/config";
 
 const Hero = () => {
@@ -6,10 +7,10 @@ const Hero = () => {
     <section className="max-w-7xl mx-auto bg-base-100 flex flex-col lg:flex-row items-center justify-center gap-16 lg:gap-20 px-8 py-8 lg:py-20">
       <div className="flex flex-col gap-10 lg:gap-14 items-center justify-center text-center lg:text-left lg:items-start">
         <h1 className="font-black text-4xl lg:text-6xl tracking-tighter md:-mb-4 bg-gradient-to-r from-[#1B2A4A] via-[#2563EB] to-[#E87A1E] bg-clip-text text-transparent">
-          Mark Up Slides & Dashboards in Seconds
+          PLSFIX-THX: Mark Up Slides & Dashboards in Seconds
         </h1>
         <p className="text-lg opacity-80 leading-relaxed">
-          Stop sending vague emails about &quot;that chart on slide 12.&quot; Capture any PowerPoint slide or Power BI dashboard, drop numbered annotations on exact spots, and share crystal-clear feedback with your team instantly.
+          PLSFIX-THX is a free Chrome extension for screenshot annotation. Stop sending vague emails about &quot;that chart on slide 12.&quot; Capture any PowerPoint slide or Power BI dashboard, drop numbered annotations on exact spots, and share crystal-clear feedback with your team instantly.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           <a
@@ -47,6 +48,15 @@ const Hero = () => {
               <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
               Works with any AI tool
             </span>
+          </div>
+          <div className="mt-2">
+            <Link href="/privacy-policy" className="text-sm opacity-50 hover:opacity-80 underline">
+              Privacy Policy
+            </Link>
+            {" · "}
+            <Link href="/tos" className="text-sm opacity-50 hover:opacity-80 underline">
+              Terms of Service
+            </Link>
           </div>
         </div>
       </div>

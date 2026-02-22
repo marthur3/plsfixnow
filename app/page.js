@@ -12,9 +12,9 @@ import Footer from "@/components/Footer";
 import { getSEOTags, renderSchemaTags } from "@/libs/seo";
 
 export const metadata = getSEOTags({
-  title: "PLSFIX-THX — Give Your AI Agent Perfect Context",
+  title: "PLSFIX-THX — Mark Up Slides & Dashboards in Seconds",
   description:
-    "Capture your screen, add numbered annotations, and share crystal-clear feedback with ChatGPT, Claude, Cursor, or any AI tool. Free Chrome extension.",
+    "PLSFIX-THX is a free Chrome extension for screenshot annotation. Capture slides and dashboards, add numbered annotations, and share crystal-clear feedback with your team instantly.",
   canonicalUrlRelative: "/",
 });
 
