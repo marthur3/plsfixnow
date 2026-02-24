@@ -16,45 +16,22 @@ const config = {
   },
   stripe: {
     // Create multiple plans in your Stripe dashboard, then add them here. You can add as many plans as you want, just make sure to add the priceId
+    // TODO: Revert to paid plans when re-enabling Pro pricing
     plans: [
       {
-        // Free plan for display purposes (no priceId needed)
+        isFeatured: true,
         name: "Free",
-        description: "Perfect for occasional slide reviews and getting started",
+        description: "All Pro features included — completely free",
         price: 0,
         features: [
-          {
-            name: "5 markups per day",
-          },
-          { name: "Numbered annotations" },
-          { name: "Watermarked exports" },
-          { name: "PNG export" },
-          { name: "Chrome extension" },
-        ],
-        isFree: true,
-      },
-      {
-        // This plan will look different on the pricing page, it will be highlighted. You can only have one plan with isFeatured: true
-        isFeatured: true,
-        priceId:
-          process.env.NODE_ENV === "development"
-            ? "price_1T0R9sAhfQeMa7TB8dtRaLlN"
-            : process.env.STRIPE_PRICE_ID || "price_1T0R9sAhfQeMa7TB8dtRaLlN",
-        name: "Lifetime Pro",
-        description: "Unlimited markups for teams who review presentations daily",
-        price: 39,
-        priceAnchor: 99,
-        interval: "one-time",
-        features: [
-          {
-            name: "Unlimited markups",
-          },
+          { name: "Unlimited markups" },
           { name: "All annotation tools" },
           { name: "No watermarks" },
           { name: "PDF, PNG & HTML export" },
-          { name: "Priority support" },
-          { name: "Lifetime updates" },
+          { name: "Copy for AI" },
+          { name: "Chrome extension" },
         ],
+        isFree: true,
       },
     ],
   },
