@@ -5,7 +5,7 @@ const config = {
   appName: "PLSFIX-THX",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "Mark up PowerPoint slides and Power BI dashboards with numbered annotations. Give precise, visual feedback on presentations and reports — no more vague emails or endless revision cycles.",
+    "Free Chrome extension with every premium feature unlocked. Mark up slides and dashboards with numbered annotations, export to PDF/PNG/HTML, and copy for AI — all completely free.",
   // REQUIRED (no https://, not trialing slash at the end, just the naked domain)
   domainName: "plsfix-thx.com",
   crisp: {

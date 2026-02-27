@@ -10,7 +10,7 @@ const Hero = () => {
           PLSFIX-THX: Mark Up Slides & Dashboards in Seconds
         </h1>
         <p className="text-lg opacity-80 leading-relaxed">
-          PLSFIX-THX is a free Chrome extension for screenshot annotation. Stop sending vague emails about &quot;that chart on slide 12.&quot; Capture any PowerPoint slide or Power BI dashboard, drop numbered annotations on exact spots, and share crystal-clear feedback with your team instantly.
+          Every premium feature — unlimited markups, all export formats, Copy for AI, zero watermarks — completely free. Capture any slide or dashboard, drop numbered annotations on exact spots, and give your team (or your AI) crystal-clear feedback in seconds.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           <a

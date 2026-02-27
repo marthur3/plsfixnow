@@ -14,7 +14,7 @@ import { getSEOTags, renderSchemaTags } from "@/libs/seo";
 export const metadata = getSEOTags({
   title: "PLSFIX-THX — Mark Up Slides & Dashboards in Seconds",
   description:
-    "PLSFIX-THX is a free Chrome extension for screenshot annotation. Capture slides and dashboards, add numbered annotations, and share crystal-clear feedback with your team instantly.",
+    "PLSFIX-THX is a free Chrome extension with every premium feature unlocked. Capture slides and dashboards, add numbered annotations, copy for AI, and share crystal-clear feedback instantly.",
   canonicalUrlRelative: "/",
 });
 
