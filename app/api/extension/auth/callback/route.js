@@ -1,6 +1,28 @@
 import { createClient } from "@/libs/supabase/server";
 import { NextResponse } from "next/server";
 
+// Simple in-memory rate limiter for POST endpoint
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 10; // 10 requests per minute per IP
+
+function checkRateLimit(key) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(key, { windowStart: now, count: 1 });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
 // Handle authentication callback from Chrome extension
 export async function GET(req) {
   try {
@@ -60,12 +82,7 @@ export async function GET(req) {
 
     redirectUrl.searchParams.set('auth', 'success');
     redirectUrl.searchParams.set('user_id', user.id);
-    redirectUrl.searchParams.set('email', user.email);
     redirectUrl.searchParams.set('has_access', profile?.has_access ? 'true' : 'false');
-
-    if (authData.session?.access_token) {
-      redirectUrl.searchParams.set('token', authData.session.access_token);
-    }
 
     // Redirect back to extension (or success page)
     return NextResponse.redirect(redirectUrl.toString());
@@ -94,6 +111,15 @@ export async function GET(req) {
 // Handle POST requests for extension auth
 export async function POST(req) {
   try {
+    // Rate limit by IP
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { email, password, action } = body;
 

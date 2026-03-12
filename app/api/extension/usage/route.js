@@ -1,15 +1,25 @@
 import { createClient } from "@/libs/supabase/server";
 import { NextResponse } from "next/server";
 
+// UUID v4 format validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Track Chrome extension usage (optional analytics)
 export async function POST(req) {
   try {
     const body = await req.json();
     const { userId, action, metadata } = body;
-    
+
     if (!userId || !action) {
       return NextResponse.json(
         { error: "User ID and action are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!UUID_REGEX.test(userId)) {
+      return NextResponse.json(
+        { error: "Invalid user ID format" },
         { status: 400 }
       );
     }
@@ -74,9 +84,9 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
     
-    if (!userId) {
+    if (!userId || !UUID_REGEX.test(userId)) {
       return NextResponse.json(
-        { error: "User ID is required" },
+        { error: "Valid user ID is required" },
         { status: 400 }
       );
     }

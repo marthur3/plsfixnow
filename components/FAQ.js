@@ -20,10 +20,18 @@ const faqList = [
     ),
   },
   {
-    question: "Do I need the Pro version?",
+    question: "Is it really free? What's the catch?",
     answer: (
       <p>
-        The free version gives you 5 annotated markups per day — enough for most individual reviewers. Upgrade to Pro if your team reviews presentations daily and needs unlimited markups with watermark-free exports.
+        No catch. Every feature is fully unlocked — unlimited markups, all export formats, no watermarks, no account required. We want to build the best feedback tool for teams and we&apos;re focused on getting it into as many hands as possible right now.
+      </p>
+    ),
+  },
+  {
+    question: "How does Copy for AI work?",
+    answer: (
+      <p>
+        Click &quot;Copy for AI&quot; in the share menu and your annotated screenshot gets copied with a structured prompt baked into the image. Paste it directly into ChatGPT, Claude, or Cursor and the AI can read both your screenshot and your numbered annotations to give you targeted fixes.
       </p>
     ),
   },
@@ -31,15 +39,15 @@ const faqList = [
     question: "Can my team use this without installing anything?",
     answer: (
       <p>
-        Only the person creating annotations needs the extension. When you export, the annotations are baked into the image. Share the PNG via email, Slack, or Teams — recipients see your feedback without installing anything.
+        Only the person creating annotations needs the extension. When you export, the annotations are baked into the image. Share the PNG or PDF via email, Slack, or Teams — recipients see your feedback without installing anything.
       </p>
     ),
   },
   {
-    question: "Can I get a refund if it doesn't work for me?",
+    question: "Is my data private?",
     answer: (
       <p>
-        Yes. Request a full refund within 7 days of purchase. Just email contact.givemethanks@gmail.com and we&apos;ll process it immediately.
+        100%. Everything runs locally in your browser. Your screenshots, annotations, and exports never leave your machine — nothing is uploaded to any server.
       </p>
     ),
   },

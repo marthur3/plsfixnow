@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/libs/supabase/client";
 import toast from "react-hot-toast";
@@ -24,6 +24,7 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const isExtensionAuth = searchParams.get("from") === "extension";
 
@@ -39,6 +40,7 @@ function LoginContent() {
       const redirectURL = window.location.origin + callbackPath;
 
       if (type === "oauth") {
+        setIsRedirecting(true);
         await supabase.auth.signInWithOAuth({
           provider,
           options: {
@@ -63,6 +65,38 @@ function LoginContent() {
       setIsLoading(false);
     }
   };
+
+  // Timeout for redirect — if OAuth doesn't redirect within 15s, show retry option
+  const [redirectTimedOut, setRedirectTimedOut] = useState(false);
+  useEffect(() => {
+    if (!isRedirecting) return;
+    const timer = setTimeout(() => setRedirectTimedOut(true), 15000);
+    return () => clearTimeout(timer);
+  }, [isRedirecting]);
+
+  if (isRedirecting) {
+    return (
+      <main className="min-h-screen flex items-center justify-center" data-theme={config.colors.theme}>
+        <div className="text-center">
+          {redirectTimedOut ? (
+            <>
+              <h2 className="text-xl font-semibold mb-2">Redirect taking too long?</h2>
+              <p className="text-base-content/60 mb-4">The sign-in redirect may have been blocked by your browser.</p>
+              <button className="btn btn-primary" onClick={() => { setIsRedirecting(false); setRedirectTimedOut(false); }}>
+                Try Again
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
+              <h2 className="text-xl font-semibold mt-4">Redirecting to Google Sign-In...</h2>
+              <p className="text-base-content/60 mt-2">You&apos;ll be redirected back automatically after signing in.</p>
+            </>
+          )}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="p-8 md:p-24" data-theme={config.colors.theme}>
@@ -121,7 +155,7 @@ function LoginContent() {
               />
             </svg>
           )}
-          Sign-up with Google
+          Continue with Google
         </button>
 
         <div className="divider text-xs text-base-content/50 font-medium">
@@ -150,7 +184,7 @@ function LoginContent() {
             {isLoading && (
               <span className="loading loading-spinner loading-xs"></span>
             )}
-            Send Magic Link
+            Send Sign-In Link
           </button>
         </form>
       </div>
