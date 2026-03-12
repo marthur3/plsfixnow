@@ -1,5 +1,6 @@
 import config from "@/config";
 import ButtonCheckout from "./ButtonCheckout";
+import WebstoreLink from "./WebstoreLink";
 
 const Pricing = () => {
   return (
@@ -91,21 +92,20 @@ const Pricing = () => {
                         Coming Soon
                       </span>
                     ) : (
-                      <a
-                        href="https://chrome.google.com/webstore/detail/plsfix-thx"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-outline btn-block"
-                      >
-                        Install Extension
-                      </a>
+                      <WebstoreLink placement="pricing_free" className="btn btn-outline btn-block">
+                        Install Free Extension
+                      </WebstoreLink>
                     )
                   ) : (
                     <ButtonCheckout priceId={plan.priceId} />
                   )}
 
                   <p className="flex items-center justify-center gap-2 text-sm text-center text-base-content/80 font-medium relative">
-                    {plan.isFree ? "Always free • No credit card required" : plan.interval === "one-time" ? "One-time payment • Lifetime access" : "Monthly billing • Cancel anytime"}
+                    {plan.isFree
+                      ? "No credit card required • Upgrade later if you need unlimited markups"
+                      : plan.interval === "one-time"
+                      ? "One-time payment • Lifetime access"
+                      : "Monthly billing • Cancel anytime"}
                   </p>
                 </div>
               </div>

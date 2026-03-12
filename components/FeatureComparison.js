@@ -1,4 +1,5 @@
 import config from "@/config";
+import WebstoreLink from "./WebstoreLink";
 
 const FeatureComparison = () => {
   const features = [
@@ -142,14 +143,9 @@ const FeatureComparison = () => {
               Coming Soon
             </span>
           ) : (
-            <a
-              href="https://chrome.google.com/webstore/detail/plsfix-thx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline btn-wide"
-            >
-              Start Free
-            </a>
+            <WebstoreLink placement="comparison" className="btn btn-outline btn-wide">
+              Add to Chrome — Free
+            </WebstoreLink>
           )}
           <a
             href="#pricing"

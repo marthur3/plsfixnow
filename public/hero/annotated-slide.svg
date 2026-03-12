@@ -1,0 +1,24 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Annotated slide with numbered markers">
+  <rect width="1440" height="960" rx="48" fill="#F8FAFC"/>
+  <rect x="80" y="80" width="1280" height="800" rx="32" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="6"/>
+  <rect x="140" y="140" width="560" height="36" rx="18" fill="#E2E8F0"/>
+  <rect x="140" y="200" width="420" height="28" rx="14" fill="#E2E8F0"/>
+  <rect x="140" y="300" width="720" height="420" rx="24" fill="#EEF2FF" stroke="#CBD5F5" stroke-width="4"/>
+  <rect x="180" y="340" width="280" height="32" rx="16" fill="#D9E5FF"/>
+  <rect x="180" y="390" width="380" height="24" rx="12" fill="#D9E5FF"/>
+  <rect x="180" y="440" width="520" height="24" rx="12" fill="#D9E5FF"/>
+  <rect x="920" y="300" width="360" height="420" rx="24" fill="#F1F5F9"/>
+  <rect x="960" y="340" width="280" height="22" rx="11" fill="#E2E8F0"/>
+  <rect x="960" y="380" width="240" height="18" rx="9" fill="#E2E8F0"/>
+  <rect x="960" y="430" width="220" height="18" rx="9" fill="#E2E8F0"/>
+  <rect x="140" y="760" width="260" height="56" rx="16" fill="#2563EB"/>
+  <rect x="420" y="760" width="220" height="56" rx="16" fill="#F59E0B"/>
+  <circle cx="880" cy="320" r="32" fill="#F97316"/>
+  <circle cx="920" cy="520" r="28" fill="#EF4444"/>
+  <circle cx="620" cy="640" r="28" fill="#22C55E"/>
+  <text x="870" y="330" font-family="DM Sans, Arial, sans-serif" font-size="24" font-weight="700" fill="white">1</text>
+  <text x="910" y="530" font-family="DM Sans, Arial, sans-serif" font-size="20" font-weight="700" fill="white">2</text>
+  <text x="610" y="650" font-family="DM Sans, Arial, sans-serif" font-size="20" font-weight="700" fill="white">3</text>
+  <rect x="980" y="590" width="240" height="60" rx="16" fill="#111827"/>
+  <text x="1010" y="628" font-family="DM Sans, Arial, sans-serif" font-size="20" font-weight="600" fill="white">Export PNG</text>
+</svg>

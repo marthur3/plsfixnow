@@ -7,6 +7,7 @@ import { Crisp } from "crisp-sdk-web";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "react-hot-toast";
 import { Tooltip } from "react-tooltip";
+import { Analytics } from "@vercel/analytics/react";
 import config from "@/config";
 
 // Crisp customer chat support:
@@ -89,6 +90,9 @@ const ClientLayout = ({ children }) => {
 
       {/* Set Crisp customer chat support */}
       <CrispChat />
+
+      {/* Vercel Analytics */}
+      <Analytics />
     </>
   );
 };

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import config from "@/config";
+import WebstoreLink from "./WebstoreLink";
 
 const CTA = () => {
   return (
@@ -26,14 +27,9 @@ const CTA = () => {
               Coming Soon
             </span>
           ) : (
-            <a
-              href="https://chrome.google.com/webstore/detail/plsfix-thx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary btn-wide"
-            >
-              Install Free Extension
-            </a>
+            <WebstoreLink placement="cta" className="btn btn-secondary btn-wide">
+              Add to Chrome — Free
+            </WebstoreLink>
           )}
         </div>
       </div>

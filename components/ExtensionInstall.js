@@ -1,5 +1,6 @@
 import Image from "next/image";
 import config from "@/config";
+import WebstoreLink from "./WebstoreLink";
 
 const ExtensionInstall = () => {
   return (
@@ -9,8 +10,7 @@ const ExtensionInstall = () => {
           Get Started in 30 Seconds
         </h2>
         <p className="text-lg opacity-80 leading-relaxed max-w-2xl mx-auto">
-          Install the free Chrome extension and start marking up slides and dashboards immediately.
-          No account required to get started.
+          Install the free Chrome extension and start marking up slides and dashboards immediately. No account required.
         </p>
       </div>
 
@@ -23,26 +23,20 @@ const ExtensionInstall = () => {
             <div>
               <h3 className="font-semibold text-lg mb-2">Install from Chrome Web Store</h3>
               <p className="text-base-content/70 mb-4">
-                Click the button below to add PLSFIX-THX to your Chrome browser.
-                It&apos;s free and takes just one click.
+                One click to add PLSFIX-THX to Chrome. It&apos;s free and takes seconds.
               </p>
               {config.extensionComingSoon ? (
                 <span className="btn btn-primary btn-disabled !bg-primary/60">
                   Coming Soon
                 </span>
               ) : (
-                <a
-                  href="https://chrome.google.com/webstore/detail/plsfix-thx"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-primary"
-                >
+                <WebstoreLink placement="steps" className="btn btn-primary">
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.69 5.05 1.83L12 12l-5.05-6.17A7.96 7.96 0 0 1 12 4zm-8 8c0-1.93.69-3.68 1.83-5.05L12 12l-6.17 5.05A7.96 7.96 0 0 1 4 12zm8 8a7.96 7.96 0 0 1-5.05-1.83L12 12l5.05 6.17A7.96 7.96 0 0 1 12 20z" fill="currentColor" opacity="0.7"/>
                   </svg>
-                  Add to Chrome - Free
-                </a>
+                  Add to Chrome — Free
+                </WebstoreLink>
               )}
             </div>
           </div>
@@ -54,8 +48,7 @@ const ExtensionInstall = () => {
             <div>
               <h3 className="font-semibold text-lg mb-2">Capture Any Slide or Dashboard</h3>
               <p className="text-base-content/70">
-                Use keyboard shortcuts (Alt+Shift+S for area selection, Alt+Shift+F for full page)
-                or click the extension icon to capture any PowerPoint slide, Power BI report, or web-based presentation.
+                Use Alt+Shift+S for area capture or Alt+Shift+F for full page. Works on PowerPoint, Power BI, Google Slides, and more.
               </p>
             </div>
           </div>
@@ -67,7 +60,7 @@ const ExtensionInstall = () => {
             <div>
               <h3 className="font-semibold text-lg mb-2">Annotate & Share with Your Team</h3>
               <p className="text-base-content/70">
-                Add numbered annotations pointing to exact elements — a misaligned chart, a wrong color, a missing data label. Export to PNG and share via email, Slack, or Teams. Everyone sees exactly what you mean.
+                Drop numbered pins, export to PNG, and paste into Slack, Teams, or email. Everyone sees exactly what to change.
               </p>
             </div>
           </div>
@@ -75,17 +68,15 @@ const ExtensionInstall = () => {
 
         <div className="relative">
           <div className="bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl p-8">
-            {/* TODO: Replace with actual product screenshot/video showing a PowerPoint slide being annotated */}
-            <div className="aspect-video bg-base-100 rounded-lg shadow-2xl flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <p className="text-base-content/60">Extension Demo Video</p>
-                <p className="text-sm text-base-content/40 mt-2">Coming Soon</p>
-              </div>
+            <div className="aspect-video bg-base-100 rounded-lg shadow-2xl overflow-hidden">
+              <Image
+                src="/hero/New Note.jpeg"
+                alt="Annotated slide preview"
+                width={960}
+                height={540}
+                className="w-full h-full object-cover"
+                priority
+              />
             </div>
           </div>
         </div>
@@ -117,6 +108,9 @@ const ExtensionInstall = () => {
             </svg>
             <span>Always Free Version</span>
           </div>
+        </div>
+        <div className="mt-10 text-sm text-base-content/60">
+          What happens after install: <span className="font-semibold text-base-content">Pin icon → Capture → Annotate → Export</span>
         </div>
       </div>
     </section>

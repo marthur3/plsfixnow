@@ -9,6 +9,9 @@ import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
+import ProofStrip from "@/components/ProofStrip";
+import PrivacySecurity from "@/components/PrivacySecurity";
+import StickyInstallBar from "@/components/StickyInstallBar";
 import { getSEOTags, renderSchemaTags } from "@/libs/seo";
 
 export const metadata = getSEOTags({
@@ -25,16 +28,19 @@ export default function Home() {
       <Suspense>
         <Header />
       </Suspense>
-      <main>
+      <main className="pb-20 lg:pb-0">
         <Hero />
+        <ProofStrip />
         <ExtensionInstall />
         <Problem />
         <FeaturesAccordion />
         <FeatureComparison />
-        <Pricing />
+        <PrivacySecurity />
         <FAQ />
+        <Pricing />
         <CTA />
       </main>
+      <StickyInstallBar />
       <Footer />
     </>
   );

@@ -1,6 +1,21 @@
 const config = {
   // Set to false when the Chrome extension is live on the Web Store
-  extensionComingSoon: true,
+  extensionComingSoon: false,
+  webstore: {
+    baseUrl: "https://chrome.google.com/webstore/detail/plsfix-thx",
+    utm: {
+      source: "plsfix-thx.com",
+      medium: "landing",
+      campaign: "install",
+    },
+    // Fill these with real values from the Chrome Web Store
+    socialProof: {
+      rating: null,
+      reviewCount: null,
+      userCount: null,
+      testimonials: [],
+    },
+  },
   // REQUIRED
   appName: "PLSFIX-THX",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
