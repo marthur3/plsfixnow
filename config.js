@@ -2,11 +2,9 @@ const config = {
   // Set to false when the Chrome extension is live on the Web Store
   extensionComingSoon: false,
   webstore: {
-    baseUrl: "https://chrome.google.com/webstore/detail/plsfix-thx",
+    baseUrl: "https://chromewebstore.google.com/detail/heijdkcfjjhcbkhikfhgcmnigmceokjj",
     utm: {
-      source: "plsfix-thx.com",
-      medium: "landing",
-      campaign: "install",
+      source: "item-share-cb",
     },
     // Fill these with real values from the Chrome Web Store
     socialProof: {
