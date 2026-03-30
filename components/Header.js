@@ -11,24 +11,16 @@ import config from "@/config";
 
 const links = [
   {
-    href: "/demo",
-    label: "See Demo",
+    href: "/#how-it-works",
+    label: "How It Works",
   },
   {
     href: "/#features",
     label: "Features",
   },
   {
-    href: "/#pricing",
-    label: "Pricing",
-  },
-  {
     href: "/#faq",
     label: "FAQ",
-  },
-  {
-    href: config.auth.loginUrl,
-    label: "Sign in",
   },
 ];
 

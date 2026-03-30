@@ -5,95 +5,55 @@ import Image from "next/image";
 
 const features = [
   {
-    title: "Capture Any Slide or Dashboard",
+    title: "Capture Any Screen in One Click",
     description:
-      "One click to capture exactly what you're reviewing. Works with PowerPoint Online, Power BI dashboards, Google Slides, or any web-based presentation. Use keyboard shortcuts (Alt+Shift+S for area, Alt+Shift+F for full page) or the extension icon.",
+      "Works on any website — PowerPoint Online, Power BI, Google Slides, Figma, your own app. Use Alt+Shift+S for area capture or Alt+Shift+F for full page. No uploads, no waiting.",
     type: "image",
-    // TODO: Replace with actual screenshot of a PowerPoint slide being captured
-    path: "https://images.unsplash.com/photo-1551650975-87deedd944c3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
-    alt: "Capturing a PowerPoint slide for annotation",
+    path: "/hero/New Note.jpeg",
+    alt: "Capturing a screen for annotation",
     svg: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-6 h-6"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
-        />
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
       </svg>
     ),
   },
   {
-    title: "Drop Numbered Annotations on Exact Spots",
+    title: "Drop Numbered Pins on Exact Spots",
     description:
-      "Click anywhere to add a numbered marker with a note. Point to the exact chart, text box, or visual that needs changes. No more 'the thing on the left' — each annotation pins your feedback to a precise location on the slide.",
+      "Click anywhere to place a numbered marker with a note. No more 'the thing on the left' — each pin points to the exact element that needs attention. Drag to reposition.",
     type: "image",
-    // TODO: Replace with actual screenshot showing numbered annotations on a Power BI dashboard
-    path: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    alt: "Numbered annotations on a dashboard visual",
+    path: "/hero/New Note.jpeg",
+    alt: "Numbered annotations pinpointing feedback",
     svg: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-6 h-6"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-        />
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
       </svg>
     ),
   },
   {
-    title: "Share via Email, Slack, or Teams",
+    title: "Paste Into Any AI or Chat Tool",
     description:
-      "Export as PNG and drop it into any channel — email, Slack, Microsoft Teams, or paste directly into a document. Your annotations are baked into the image. Recipients see exactly what needs to change without installing anything.",
+      "Export as PNG and paste directly into ChatGPT, Claude, Cursor, Slack, Teams, or email. Annotations are baked into the image — recipients see exactly what to fix without installing anything.",
+    type: "image",
+    path: "/hero/New Note.jpeg",
+    alt: "Sharing annotated screenshot with AI tools",
     svg: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-6 h-6"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-        />
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
       </svg>
     ),
   },
   {
-    title: "Built for Speed, Not Overhead",
+    title: "100% Local — Nothing Leaves Your Machine",
     description:
-      "Everything happens in your browser — no uploads, no servers, no IT approvals. Capture a slide, annotate it, and share it in under 10 seconds. Perfect for fast-moving review cycles where every revision round costs time.",
+      "Everything runs in your browser. No servers, no uploads, no IT approvals needed. Your screenshots and annotations stay completely private.",
+    type: "image",
+    path: "/hero/New Note.jpeg",
+    alt: "Local processing with no data uploads",
     svg: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-6 h-6"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
-        />
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
       </svg>
     ),
   },

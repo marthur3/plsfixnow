@@ -60,9 +60,6 @@ const Footer = () => {
                 <Link href="/blog" className="link link-hover">
                   Blog
                 </Link>
-                <Link href="/demo" className="link link-hover">
-                  Demo
-                </Link>
               </div>
             </div>
 

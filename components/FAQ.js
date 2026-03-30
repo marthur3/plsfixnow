@@ -4,42 +4,34 @@ import { useRef, useState } from "react";
 
 const faqList = [
   {
-    question: "Does this work with PowerPoint and Power BI?",
+    question: "Which AI tools does this work with?",
     answer: (
       <p>
-        Yes. Capture any PowerPoint slide (via PowerPoint Online or the desktop app in your browser), any Power BI dashboard, Google Slides, Tableau, or any other web-based presentation tool. If you can see it in Chrome, you can annotate it.
+        Any AI that accepts images — ChatGPT, Claude, Gemini, Cursor, Windsurf, and more. Export your annotated screenshot as PNG and paste it in. The AI sees your numbered pins and knows exactly what you&apos;re pointing at.
       </p>
     ),
   },
   {
-    question: "How is this different from just taking a regular screenshot?",
+    question: "How is this different from a regular screenshot?",
     answer: (
       <p>
-        Regular screenshots force you to write &quot;see the bar chart in the bottom-left, below the revenue header...&quot; With numbered annotations, you just say &quot;fix #1&quot; or &quot;change the color at #3.&quot; Your team sees exactly what you mean — zero guesswork.
+        Regular screenshots need a paragraph of explanation: &quot;see the button on the left, below the nav, next to the icon...&quot; With numbered annotations, you just say &quot;fix #1&quot; or &quot;change #3 to blue.&quot; Zero ambiguity.
       </p>
     ),
   },
   {
-    question: "Is it really free? What's the catch?",
+    question: "Is it really free?",
     answer: (
       <p>
-        No catch. Every feature is fully unlocked — unlimited markups, all export formats, no watermarks, no account required. We want to build the best feedback tool for teams and we&apos;re focused on getting it into as many hands as possible right now.
+        Yes. Every feature is fully unlocked — unlimited screenshots, all export formats, no watermarks, no account required. We&apos;re focused on making the best annotation tool possible and getting it into as many hands as we can.
       </p>
     ),
   },
   {
-    question: "How does Copy for AI work?",
+    question: "Do recipients need to install anything?",
     answer: (
       <p>
-        Click &quot;Copy for AI&quot; in the share menu and your annotated screenshot gets copied with a structured prompt baked into the image. Paste it directly into ChatGPT, Claude, or Cursor and the AI can read both your screenshot and your numbered annotations to give you targeted fixes.
-      </p>
-    ),
-  },
-  {
-    question: "Can my team use this without installing anything?",
-    answer: (
-      <p>
-        Only the person creating annotations needs the extension. When you export, the annotations are baked into the image. Share the PNG or PDF via email, Slack, or Teams — recipients see your feedback without installing anything.
+        No. Only the person creating annotations needs the extension. When you export, annotations are baked into the PNG image. Share it via Slack, email, Teams, or paste it into any AI chat — recipients see your feedback with no install required.
       </p>
     ),
   },
@@ -47,7 +39,15 @@ const faqList = [
     question: "Is my data private?",
     answer: (
       <p>
-        100%. Everything runs locally in your browser. Your screenshots, annotations, and exports never leave your machine — nothing is uploaded to any server.
+        100%. Everything runs locally in your Chrome browser. Your screenshots, annotations, and exports never leave your machine. Nothing is uploaded to any server, ever.
+      </p>
+    ),
+  },
+  {
+    question: "What browsers are supported?",
+    answer: (
+      <p>
+        Chrome 88 and above (Manifest V3). This includes Chromium-based browsers like Brave and Edge.
       </p>
     ),
   },
